@@ -4,6 +4,13 @@ from bpy.props import StringProperty
 from bpy.props import EnumProperty
 import bpy.utils.previews
 
+### TODO
+#
+# - use set function instead of update
+# - add standin thumbnail if there are not enough thumbnails for all poses
+# - don't create more thumbnails then poses
+# - try to automatically update path if the file is linked
+
 
 # Dict to hold the ui previews collection
 preview_collections = {}
@@ -59,10 +66,11 @@ def update_pose(self, context):
         bpy.ops.poselib.apply_pose(pose_index=value)
 
 
-# def set_enum(self, value):
+def set_pose(self, value):
 #     print("value: {}".format(value))
 #     pcoll = preview_collections["pose_previews"]
 #     print(list(pcoll.keys())[value])
+    print(self, value)
 
 
 class PoseLibPreviewPanel(bpy.types.Panel):
@@ -89,7 +97,8 @@ class PoseLibPreviewPanel(bpy.types.Panel):
 def register():
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
-        update=update_pose)
+        update=update_pose,
+        # set=set_pose)
     bpy.types.Object.pose_previews_dir = StringProperty(
         name="Folder Path",
         subtype='DIR_PATH',
