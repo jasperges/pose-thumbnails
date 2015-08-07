@@ -19,10 +19,10 @@
 
 bl_info = {
     "name": "Pose Library Previews",
-    "author": "Jasper van Nieuwenhuizen",
+    "author": "Jasper van Nieuwenhuizen (jasperge)",
     "version": (0, 1),
     "blender": (2, 7, 5),
-    "location": "Properties > Armature > Pose Library Previews",
+    "location": "Properties > Armature > Pose Library Previews and 3D View > Properties > Pose Library",
     "description": "Add preview images for a pose Library",
     "warning": "wip",
     "wiki_url": "",
