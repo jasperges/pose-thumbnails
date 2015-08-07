@@ -6,11 +6,17 @@ from bpy.props import (StringProperty,
 import bpy.utils.previews
 
 
-### TODO
-#
-# - try to automatically update path if the file is linked
-# - find out if armature is linked and if so if it proxyfied? if not, don't enable
+class PoseLibPreviewPreferences(bpy.types.AddonPreferences):
+    bl_idname = __package__
 
+    add_3dview_prop_panel = bpy.props.BoolProperty(
+        name="Add 3D View Properties Panel",
+        description="Also add a panel to the Properties Panel of the 3D View",
+        default=False)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "add_3dview_prop_panel")
 
 # Dict to hold the ui previews collection
 preview_collections = {}
@@ -32,8 +38,6 @@ def generate_previews(self, context):
     if not obj.pose_previews_refresh:
         if directory == pcoll.pose_previews_dir:
             return pcoll.pose_previews
-    else:
-        print("Refreshing...")
 
     num_pose_markers = len(pose_lib.pose_markers)
 
@@ -81,6 +85,7 @@ def update_pose(self, context):
 
 
 class PoseLibPreviewRefresh(bpy.types.Operator):
+
     """Refresh Pose Library thumbnails of active Pose Library"""
 
     bl_description = "Refresh Pose Library thumbnails"
@@ -98,6 +103,7 @@ class PoseLibPreviewRefresh(bpy.types.Operator):
 
 
 class PoseLibPreviewPanel(bpy.types.Panel):
+
     """Creates a Panel in the armature context of the properties editor"""
     bl_label = "Pose Library Previews"
     bl_idname = "DATA_PT_pose_previews"
@@ -120,6 +126,42 @@ class PoseLibPreviewPanel(bpy.types.Panel):
         col.separator()
         col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
         col.prop(pose_lib, "pose_previews_dir")
+
+
+class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
+
+    """Creates a Panel in the 3D View Properties panel"""
+    bl_label = "Pose Library"
+    bl_idname = "VIEW3D_PT_pose_previews"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_context = "data"
+
+    @classmethod
+    def poll(cls, context):
+        user_prefs = context.user_preferences
+        addon_prefs = user_prefs.addons[__package__].preferences
+        obj = context.object
+
+        return (obj and obj.type == 'ARMATURE'
+                and addon_prefs.add_3dview_prop_panel)
+
+    def draw(self, context):
+        obj = context.object
+        pose_lib = obj.pose_library
+
+        layout = self.layout
+        col = layout.column(align=False)
+        col.template_ID(obj, "pose_library",
+                        # new="poselib.new",
+                        # unlink="poselib.unlink"
+                        )
+        if obj.pose_library:
+            col.separator()
+            col.template_icon_view(obj, "pose_previews", show_labels=False)
+            col.separator()
+            col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
+            col.prop(pose_lib, "pose_previews_dir")
 
 
 def register():
