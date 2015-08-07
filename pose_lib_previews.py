@@ -4,12 +4,12 @@ from bpy.props import StringProperty
 from bpy.props import EnumProperty
 import bpy.utils.previews
 
+
 ### TODO
 #
-# - add standin thumbnail if there are not enough thumbnails for all poses
+# - Add thumbnails for different poselibs
 # - try to automatically update path if the file is linked
 # - find out if armature is linked and if so if it proxyfied? if not, don't enable
-# - Add thumbnails for different poselibs
 
 
 # Dict to hold the ui previews collection
@@ -31,16 +31,6 @@ def generate_previews(self, context):
     if directory == pcoll.pose_previews_dir:
         return pcoll.pose_previews
 
-    # if bpy.data.filepath:
-    #     blend_dir = os.path.dirname(bpy.data.filepath)
-    #     arm_name = bpy.path.clean_name(self.name)
-    #     directory = os.path.join(blend_dir, "pose_previews", arm_name)
-    # else:
-    #     directory = pcoll.pose_previews_dir
-
-    # if directory == pcoll.pose_previews_dir:
-    #     return pcoll.pose_previews
-
     num_pose_markers = len(obj.pose_library.pose_markers)
 
     if directory and os.path.isdir(bpy.path.abspath(directory)):
@@ -51,12 +41,29 @@ def generate_previews(self, context):
             if os.path.splitext(fn)[-1].lower() == ".png":
                 image_paths.append(fn)
 
+        # Only show as much thumbnails as there are poses
+        if len(image_paths) > num_pose_markers:
+            image_paths = image_paths[:num_pose_markers]
+        # If there are more poses then thumbnails, add placeholder
+        if len(image_paths) < num_pose_markers:
+            no_thumbnail = os.path.join(os.path.dirname(__file__),
+                                        "thumbnails",
+                                        "no_thumbnail.png")
+            image_paths.append(no_thumbnail)
+
+        # Determine how many extra placeholders are needed
+        len_diff = num_pose_markers - len(image_paths)
+
         for i, name in enumerate(image_paths):
-            if i == num_pose_markers:
-                break
             filepath = os.path.join(bpy.path.abspath(directory), name)
             thumb = pcoll.load(filepath, filepath, 'IMAGE')
             enum_items.append((name, name, "", thumb.icon_id, i))
+            # Add extra placeholder thumbnails if needed
+            if name == image_paths[-1]:
+                for j in range(len_diff):
+                    enum_items.append((name, name, "",
+                                       thumb.icon_id,
+                                       i + j + 1))
 
     pcoll.pose_previews = enum_items
     pcoll.pose_previews_dir = directory
