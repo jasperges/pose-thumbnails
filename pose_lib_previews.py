@@ -7,7 +7,6 @@ import bpy.utils.previews
 
 ### TODO
 #
-# - Add thumbnails for different poselibs
 # - try to automatically update path if the file is linked
 # - find out if armature is linked and if so if it proxyfied? if not, don't enable
 
@@ -24,14 +23,15 @@ def generate_previews(self, context):
         return enum_items
 
     obj = self
-    directory = obj.pose_previews_dir
+    pose_lib = obj.pose_library
+    directory = pose_lib.pose_previews_dir
 
     pcoll = preview_collections["pose_previews"]
 
     if directory == pcoll.pose_previews_dir:
         return pcoll.pose_previews
 
-    num_pose_markers = len(obj.pose_library.pose_markers)
+    num_pose_markers = len(pose_lib.pose_markers)
 
     if directory and os.path.isdir(bpy.path.abspath(directory)):
         if pcoll:
@@ -92,17 +92,18 @@ class PoseLibPreviewPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         obj = context.object
+        pose_lib = obj.pose_library
         # previews
         layout.template_icon_view(obj, "pose_previews", show_labels=False)
-        layout.prop(obj, "pose_previews_dir")
+        layout.prop(pose_lib, "pose_previews_dir")
 
 
 def register():
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
         update=update_pose)
-    bpy.types.Object.pose_previews_dir = StringProperty(
-        name="Folder Path",
+    bpy.types.Action.pose_previews_dir = StringProperty(
+        name="Thumbnail Path",
         subtype='DIR_PATH',
         default="")
 
@@ -118,4 +119,4 @@ def unregister():
     preview_collections.clear()
 
     del bpy.types.Object.pose_previews
-    del bpy.types.Object.pose_previews_dir
+    del bpy.types.Action.pose_previews_dir
