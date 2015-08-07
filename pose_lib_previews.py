@@ -1,7 +1,8 @@
 import os
 import bpy
-from bpy.props import StringProperty
-from bpy.props import EnumProperty
+from bpy.props import (StringProperty,
+                       BoolProperty,
+                       EnumProperty)
 import bpy.utils.previews
 
 
@@ -28,8 +29,11 @@ def generate_previews(self, context):
 
     pcoll = preview_collections["pose_previews"]
 
-    if directory == pcoll.pose_previews_dir:
-        return pcoll.pose_previews
+    if not obj.pose_previews_refresh:
+        if directory == pcoll.pose_previews_dir:
+            return pcoll.pose_previews
+    else:
+        print("Refreshing...")
 
     num_pose_markers = len(pose_lib.pose_markers)
 
@@ -76,6 +80,23 @@ def update_pose(self, context):
         bpy.ops.poselib.apply_pose(pose_index=value)
 
 
+class PoseLibPreviewRefresh(bpy.types.Operator):
+    """Refresh Pose Library thumbnails of active Pose Library"""
+
+    bl_description = "Refresh Pose Library thumbnails"
+    bl_idname = "poselib.refresh_thumbnails"
+    bl_label = "Refresh"
+    bl_space_type = 'PROPERTIES'
+
+    def execute(self, context):
+        obj = context.object
+        obj.pose_previews_refresh = True
+        generate_previews(context.object, context)
+        obj.pose_previews_refresh = False
+
+        return {'FINISHED'}
+
+
 class PoseLibPreviewPanel(bpy.types.Panel):
     """Creates a Panel in the armature context of the properties editor"""
     bl_label = "Pose Library Previews"
@@ -90,18 +111,24 @@ class PoseLibPreviewPanel(bpy.types.Panel):
         return obj and obj.type == 'ARMATURE' and obj.pose_library
 
     def draw(self, context):
-        layout = self.layout
         obj = context.object
         pose_lib = obj.pose_library
-        # previews
-        layout.template_icon_view(obj, "pose_previews", show_labels=False)
-        layout.prop(pose_lib, "pose_previews_dir")
+
+        layout = self.layout
+        col = layout.column(align=False)
+        col.template_icon_view(obj, "pose_previews", show_labels=False)
+        col.separator()
+        col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
+        col.prop(pose_lib, "pose_previews_dir")
 
 
 def register():
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
         update=update_pose)
+    bpy.types.Object.pose_previews_refresh = BoolProperty(
+        name="Refresh thumbnails",
+        default=False)
     bpy.types.Action.pose_previews_dir = StringProperty(
         name="Thumbnail Path",
         subtype='DIR_PATH',
