@@ -98,7 +98,8 @@ def register():
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
         update=update_pose,
-        # set=set_pose)
+        # set=set_pose
+        )
     bpy.types.Object.pose_previews_dir = StringProperty(
         name="Folder Path",
         subtype='DIR_PATH',
