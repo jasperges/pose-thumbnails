@@ -7,7 +7,6 @@ import bpy.utils.previews
 ### TODO
 #
 # - add standin thumbnail if there are not enough thumbnails for all poses
-# - don't create more thumbnails then poses
 # - try to automatically update path if the file is linked
 # - find out if armature is linked and if so if it proxyfied? if not, don't enable
 # - Add thumbnails for different poselibs
@@ -42,6 +41,8 @@ def generate_previews(self, context):
     # if directory == pcoll.pose_previews_dir:
     #     return pcoll.pose_previews
 
+    num_pose_markers = len(obj.pose_library.pose_markers)
+
     if directory and os.path.isdir(bpy.path.abspath(directory)):
         if pcoll:
             pcoll.clear()
@@ -51,6 +52,8 @@ def generate_previews(self, context):
                 image_paths.append(fn)
 
         for i, name in enumerate(image_paths):
+            if i == num_pose_markers:
+                break
             filepath = os.path.join(bpy.path.abspath(directory), name)
             thumb = pcoll.load(filepath, filepath, 'IMAGE')
             enum_items.append((name, name, "", thumb.icon_id, i))
