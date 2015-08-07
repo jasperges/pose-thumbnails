@@ -6,10 +6,11 @@ import bpy.utils.previews
 
 ### TODO
 #
-# - use set function instead of update
 # - add standin thumbnail if there are not enough thumbnails for all poses
 # - don't create more thumbnails then poses
 # - try to automatically update path if the file is linked
+# - find out if armature is linked and if so if it proxyfied? if not, don't enable
+# - Add thumbnails for different poselibs
 
 
 # Dict to hold the ui previews collection
@@ -60,17 +61,9 @@ def generate_previews(self, context):
 
 
 def update_pose(self, context):
-    fn = os.path.basename(self.pose_previews)
-    value = int(os.path.splitext(fn)[0]) - 1
+    value = self['pose_previews']
     if self.pose_library.pose_markers:
         bpy.ops.poselib.apply_pose(pose_index=value)
-
-
-def set_pose(self, value):
-#     print("value: {}".format(value))
-#     pcoll = preview_collections["pose_previews"]
-#     print(list(pcoll.keys())[value])
-    print(self, value)
 
 
 class PoseLibPreviewPanel(bpy.types.Panel):
@@ -97,9 +90,7 @@ class PoseLibPreviewPanel(bpy.types.Panel):
 def register():
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
-        update=update_pose,
-        # set=set_pose
-        )
+        update=update_pose)
     bpy.types.Object.pose_previews_dir = StringProperty(
         name="Folder Path",
         subtype='DIR_PATH',
