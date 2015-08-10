@@ -1,3 +1,11 @@
+if "bpy" in locals():
+    import importlib
+    if "prefs" in locals():
+        importlib.reload(prefs)
+else:
+    from . import prefs
+
+
 import os
 import bpy
 from bpy.props import (StringProperty,
@@ -5,18 +13,6 @@ from bpy.props import (StringProperty,
                        EnumProperty)
 import bpy.utils.previews
 
-
-class PoseLibPreviewPreferences(bpy.types.AddonPreferences):
-    bl_idname = __package__
-
-    add_3dview_prop_panel = bpy.props.BoolProperty(
-        name="Add 3D View Properties Panel",
-        description="Also add a panel to the Properties Panel of the 3D View",
-        default=True)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, "add_3dview_prop_panel")
 
 # Dict to hold the ui previews collection
 preview_collections = {}
@@ -131,7 +127,7 @@ class PoseLibPreviewPanel(bpy.types.Panel):
 class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
 
     """Creates a Panel in the 3D View Properties panel"""
-    bl_label = "Pose Library"
+    bl_label = "Imposter"
     bl_idname = "VIEW3D_PT_pose_previews"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
