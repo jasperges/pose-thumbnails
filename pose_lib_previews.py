@@ -174,10 +174,7 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
 
         layout = self.layout
         col = layout.column(align=False)
-        col.template_ID(obj, "pose_library",
-                        # new="poselib.new",
-                        # unlink="poselib.unlink"
-                        )
+        col.template_ID(obj, "pose_library")
         if obj.pose_library:
             col.separator()
             col.template_icon_view(obj, "pose_previews",
@@ -198,7 +195,6 @@ def register():
         name="Thumbnail Path",
         subtype='DIR_PATH',
         default="")
-    bpy.types.Scene.pose_search = StringProperty(name="pose_search")
 
     pcoll = bpy.utils.previews.new()
     pcoll.pose_previews_dir = ""
@@ -213,4 +209,3 @@ def unregister():
 
     del bpy.types.Object.pose_previews
     del bpy.types.Action.pose_previews_dir
-    del bpy.types.Scene.pose_search
