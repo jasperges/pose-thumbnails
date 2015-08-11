@@ -19,7 +19,8 @@ import bpy.utils.previews
 preview_collections = {}
 
 
-# create th previews and an enum with label, tooltip and preview as custom icon
+# create the previews and an enum with label,
+# tooltip and preview as custom icon
 def generate_previews(self, context):
     enum_items = []
 
@@ -77,18 +78,22 @@ def generate_previews(self, context):
                 pose_name = re.sub(r"[-_\.]", " ", pose_name)
             label = "{num} {pose_name}".format(num=num, pose_name=pose_name)
 
-            enum_items.append((name, label, label, thumb.icon_id, i))
+            enum_items.append((label, label, label, thumb.icon_id, i))
             # Add extra placeholder thumbnails if needed
             if name == image_paths[-1]:
                 for j in range(len_diff):
                     label = "{num} (no thumbnail)".format(num=i + j + 2)
-                    enum_items.append((name, label, label,
+                    enum_items.append((label, label, label,
                                        thumb.icon_id,
                                        i + j + 1))
 
     pcoll.pose_previews = enum_items
     pcoll.pose_previews_dir = directory
     return pcoll.pose_previews
+
+
+def filepath_update(self, context):
+    bpy.ops.poselib.refresh_thumbnails()
 
 
 def update_pose(self, context):
@@ -113,8 +118,13 @@ class PoseLibPreviewRefresh(bpy.types.Operator):
     def execute(self, context):
         obj = context.object
         obj.pose_previews_refresh = True
-        generate_previews(context.object, context)
+        enum_items = generate_previews(context.object, context)
         obj.pose_previews_refresh = False
+        scene = context.scene
+        scene.pose_search.clear()
+        for i in enum_items:
+            item = scene.pose_search.add()
+            item.name = i[0]
 
         return {'FINISHED'}
 
@@ -184,17 +194,19 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
             col.separator()
             col.template_icon_view(obj, "pose_previews",
                                    show_labels=show_labels)
-            col.prop_search(obj, "pose_previews", context.scene, "pose_search", icon='VIEWZOOM')
+            col.prop_search(obj, "pose_previews",
+                            context.scene, "pose_search",
+                            text="Pose search", icon='VIEWZOOM')
             col.separator()
             col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
             col.prop(pose_lib, "pose_previews_dir")
+        if not obj.mode == 'POSE':
+            layout.enabled = False
 
 
 def register():
-    # bpy.utils.register_class(PoseLibSearch)
-    bpy.types.Scene.pose_search = bpy.props.CollectionProperty(type=PoseLibSearch)
-    # items = generate_previews(bpy.context.object, bpy.context)
-    # print(items)
+    bpy.types.Scene.pose_search = bpy.props.CollectionProperty(
+        type=PoseLibSearch)
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
         update=update_pose)
@@ -204,7 +216,8 @@ def register():
     bpy.types.Action.pose_previews_dir = StringProperty(
         name="Thumbnail Path",
         subtype='DIR_PATH',
-        default="")
+        default="",
+        update=filepath_update)
 
     pcoll = bpy.utils.previews.new()
     pcoll.pose_previews_dir = ""
