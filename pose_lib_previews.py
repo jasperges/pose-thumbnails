@@ -68,7 +68,7 @@ def generate_previews(self, context):
             try:
                 num = int(match.groups()[0])
             except (ValueError, TypeError, IndexError, AttributeError):
-                num = i
+                num = i + 1
             try:
                 pose_name = match.groups()[1]
             except (TypeError, IndexError, AttributeError):
@@ -80,7 +80,7 @@ def generate_previews(self, context):
             # Add extra placeholder thumbnails if needed
             if name == image_paths[-1]:
                 for j in range(len_diff):
-                    label = "{num} Pose".format(num=i + j + 1)
+                    label = "{num} Pose".format(num=i + j + 2)
                     enum_items.append((name, label, label,
                                        thumb.icon_id,
                                        i + j + 1))
