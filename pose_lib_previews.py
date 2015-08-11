@@ -64,23 +64,24 @@ def generate_previews(self, context):
             thumb = pcoll.load(filepath, filepath, 'IMAGE')
 
             label = os.path.splitext(name)[0]
-            match = re.match(r"([0-9]+)[-_\.](.*)", label)
+            match = re.match(r"([0-9]+)[-_\.]?(.*)?", label)
             try:
                 num = int(match.groups()[0])
             except (ValueError, TypeError, IndexError, AttributeError):
-                num = i
+                num = i + 1
             try:
                 pose_name = match.groups()[1]
             except (TypeError, IndexError, AttributeError):
-                pose_name = "Pose"
-            pose_name = re.sub(r"[-_\.]", " ", pose_name)
+                pose_name = "(no thumbnail)"
+            if pose_name:
+                pose_name = re.sub(r"[-_\.]", " ", pose_name)
             label = "{num} {pose_name}".format(num=num, pose_name=pose_name)
 
             enum_items.append((name, label, label, thumb.icon_id, i))
             # Add extra placeholder thumbnails if needed
             if name == image_paths[-1]:
                 for j in range(len_diff):
-                    label = "{num} Pose".format(num=i + j + 1)
+                    label = "{num} (no thumbnail)".format(num=i + j + 2)
                     enum_items.append((name, label, label,
                                        thumb.icon_id,
                                        i + j + 1))
