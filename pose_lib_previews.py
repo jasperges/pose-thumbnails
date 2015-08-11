@@ -67,11 +67,11 @@ def generate_previews(self, context):
             match = re.match(r"([0-9]+)[-_\.](.*)", label)
             try:
                 num = int(match.groups()[0])
-            except (ValueError, TypeError, IndexError):
+            except (ValueError, TypeError, IndexError, AttributeError):
                 num = i
             try:
                 pose_name = match.groups()[1]
-            except (TypeError, IndexError):
+            except (TypeError, IndexError, AttributeError):
                 pose_name = "Pose"
             pose_name = re.sub(r"[-_\.]", " ", pose_name)
             label = "{num} {pose_name}".format(num=num, pose_name=pose_name)
@@ -80,7 +80,7 @@ def generate_previews(self, context):
             # Add extra placeholder thumbnails if needed
             if name == image_paths[-1]:
                 for j in range(len_diff):
-                    label = "Pose {}".format(i + j + 1)
+                    label = "{num} Pose".format(num=i + j + 1)
                     enum_items.append((name, label, label,
                                        thumb.icon_id,
                                        i + j + 1))
@@ -198,6 +198,7 @@ def register():
         name="Thumbnail Path",
         subtype='DIR_PATH',
         default="")
+    bpy.types.Scene.pose_search = StringProperty(name="pose_search")
 
     pcoll = bpy.utils.previews.new()
     pcoll.pose_previews_dir = ""
@@ -212,3 +213,4 @@ def unregister():
 
     del bpy.types.Object.pose_previews
     del bpy.types.Action.pose_previews_dir
+    del bpy.types.Scene.pose_search
