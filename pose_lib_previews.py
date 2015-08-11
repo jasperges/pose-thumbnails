@@ -96,6 +96,10 @@ def update_pose(self, context):
         bpy.ops.poselib.apply_pose(pose_index=value)
 
 
+class PoseLibSearch(bpy.types.PropertyGroup):
+    pose = bpy.props.StringProperty(name="previews search", default="")
+
+
 class PoseLibPreviewRefresh(bpy.types.Operator):
 
     """Refresh Pose Library thumbnails of active Pose Library"""
@@ -179,12 +183,17 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
             col.separator()
             col.template_icon_view(obj, "pose_previews",
                                    show_labels=show_labels)
+            col.prop_search(obj, "pose_previews", context.scene, "pose_search", icon='VIEWZOOM')
             col.separator()
             col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
             col.prop(pose_lib, "pose_previews_dir")
 
 
 def register():
+    # bpy.utils.register_class(PoseLibSearch)
+    bpy.types.Scene.pose_search = bpy.props.CollectionProperty(type=PoseLibSearch)
+    # items = generate_previews(bpy.context.object, bpy.context)
+    # print(items)
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
         update=update_pose)
