@@ -7,6 +7,7 @@ else:
 
 
 import os
+import re
 import bpy
 from bpy.props import (StringProperty,
                        BoolProperty,
@@ -46,7 +47,7 @@ def generate_previews(self, context):
                 image_paths.append(fn)
 
         # Only show as much thumbnails as there are poses
-        if len(image_paths) > num_pose_markers:
+        if len(image_paths) >= num_pose_markers:
             image_paths = image_paths[:num_pose_markers]
         # If there are more poses then thumbnails, add placeholder
         if len(image_paths) < num_pose_markers:
@@ -61,11 +62,26 @@ def generate_previews(self, context):
         for i, name in enumerate(image_paths):
             filepath = os.path.join(bpy.path.abspath(directory), name)
             thumb = pcoll.load(filepath, filepath, 'IMAGE')
-            enum_items.append((name, name, "", thumb.icon_id, i))
+
+            label = os.path.splitext(name)[0]
+            match = re.match(r"([0-9]+)[-_\.](.*)", label)
+            try:
+                num = int(match.groups()[0])
+            except (ValueError, TypeError, IndexError):
+                num = i
+            try:
+                pose_name = match.groups()[1]
+            except (TypeError, IndexError):
+                pose_name = "Pose"
+            pose_name = re.sub(r"[-_\.]", " ", pose_name)
+            label = "{num} {pose_name}".format(num=num, pose_name=pose_name)
+
+            enum_items.append((name, label, label, thumb.icon_id, i))
             # Add extra placeholder thumbnails if needed
             if name == image_paths[-1]:
                 for j in range(len_diff):
-                    enum_items.append((name, name, "",
+                    label = "Pose {}".format(i + j + 1)
+                    enum_items.append((name, label, label,
                                        thumb.icon_id,
                                        i + j + 1))
 
@@ -113,21 +129,28 @@ class PoseLibPreviewPanel(bpy.types.Panel):
         return obj and obj.type == 'ARMATURE' and obj.pose_library
 
     def draw(self, context):
+        user_prefs = context.user_preferences
+        addon_prefs = user_prefs.addons[__package__].preferences
+        show_labels = addon_prefs.show_labels
         obj = context.object
         pose_lib = obj.pose_library
 
         layout = self.layout
         col = layout.column(align=False)
-        col.template_icon_view(obj, "pose_previews", show_labels=False)
+        col.template_icon_view(obj, "pose_previews",
+                               show_labels=show_labels)
         col.separator()
         col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
         col.prop(pose_lib, "pose_previews_dir")
+
+        if not pose_lib:
+            layout.enabled = False
 
 
 class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
 
     """Creates a Panel in the 3D View Properties panel"""
-    bl_label = "Imposter"
+    bl_label = "Pose Library"
     bl_idname = "VIEW3D_PT_pose_previews"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -143,6 +166,9 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
                 and addon_prefs.add_3dview_prop_panel)
 
     def draw(self, context):
+        user_prefs = context.user_preferences
+        addon_prefs = user_prefs.addons[__package__].preferences
+        show_labels = addon_prefs.show_labels
         obj = context.object
         pose_lib = obj.pose_library
 
@@ -154,7 +180,8 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
                         )
         if obj.pose_library:
             col.separator()
-            col.template_icon_view(obj, "pose_previews", show_labels=False)
+            col.template_icon_view(obj, "pose_previews",
+                                   show_labels=show_labels)
             col.separator()
             col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
             col.prop(pose_lib, "pose_previews_dir")
