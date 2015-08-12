@@ -26,8 +26,8 @@ bl_info = {
                 "and 3D View > Properties > Pose Library",
     "description": "Add preview images for a pose Library",
     "warning": "wip",
-    "wiki_url": "",
-    "tracker_url": "",
+    "wiki_url": "https://github.com/jasperges/pose_lib_preview/blob/master/README.md",
+    "tracker_url": "https://github.com/jasperges/pose_lib_preview/issues",
     "support": 'COMMUNITY',
     "category": "Animation"}
 
