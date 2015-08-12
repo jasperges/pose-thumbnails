@@ -192,11 +192,12 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
         col.template_ID(obj, "pose_library")
         if obj.pose_library:
             col.separator()
-            col.template_icon_view(obj, "pose_previews",
-                                   show_labels=show_labels)
-            col.prop_search(obj, "pose_previews",
-                            context.scene, "pose_search",
-                            text="Pose search", icon='VIEWZOOM')
+            sub_col = col.column(align=True)
+            sub_col.template_icon_view(obj, "pose_previews",
+                                       show_labels=show_labels)
+            sub_col.prop_search(obj, "pose_previews",
+                                context.scene, "pose_search",
+                                text="", icon='VIEWZOOM')
             col.separator()
             col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
             col.prop(pose_lib, "pose_previews_dir")
