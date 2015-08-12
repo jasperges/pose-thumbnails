@@ -12,7 +12,7 @@ class PoseLibPreviewPreferences(bpy.types.AddonPreferences):
     show_labels = bpy.props.BoolProperty(
         name="Show the labels of the preview thumbnails",
         description="Show the labels of the preview thumbnails",
-        default=True)
+        default=False)
 
     def draw(self, context):
         layout = self.layout
