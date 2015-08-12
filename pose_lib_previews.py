@@ -75,7 +75,7 @@ def generate_previews(self, context):
             except (TypeError, IndexError, AttributeError):
                 pose_name = "(no thumbnail)"
             if pose_name:
-                pose_name = re.sub(r"[-_\.]", " ", pose_name)
+                pose_name = re.sub(r"[_\.]", " ", pose_name)
             label = "{num} {pose_name}".format(num=num, pose_name=pose_name)
 
             enum_items.append((label, label, label, thumb.icon_id, i))
