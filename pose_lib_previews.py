@@ -92,14 +92,55 @@ def generate_previews(self, context):
     return pcoll.pose_previews
 
 
+def get_pose_bone_groups(self, context):
+    enum_items = []
+
+    if context is None:
+        return enum_items
+
+    obj = self
+    bone_groups = obj.pose.bone_groups
+    if bone_groups:
+        for bg in bone_groups:
+            enum_items.append((bg.name, bg.name, ""))
+
+    return enum_items
+
+
 def filepath_update(self, context):
     bpy.ops.poselib.refresh_thumbnails()
 
 
 def update_pose(self, context):
     value = self['pose_previews']
+    obj = self
+
+    if obj.pose_apply_options in ('ALL', 'BONEGROUP'):
+        selected_bones = [pb.name for pb in context.selected_pose_bones]
+
+    if obj.pose_apply_options == 'ALL':
+        for bone in obj.data.bones:
+            bone.select = True
+    elif obj.pose_apply_options == 'BONEGROUP':
+        for bone in obj.data.bones:
+            bone.select = False
+        bone_group = obj.pose_bone_groups
+        for bone in obj.pose.bones:
+            try:
+                if bone.bone_group.name.lower() == bone_group.lower():
+                    obj.data.bones[bone.name].select = True
+            except AttributeError:
+                pass
+
     if self.pose_library.pose_markers:
         bpy.ops.poselib.apply_pose(pose_index=value)
+
+    if obj.pose_apply_options in ('ALL', 'BONEGROUP'):
+        for bone in obj.data.bones:
+            if bone.name in selected_bones:
+                bone.select = True
+            else:
+                bone.select = False
 
 
 class PoseLibSearch(bpy.types.PropertyGroup):
@@ -185,6 +226,8 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
         addon_prefs = user_prefs.addons[__package__].preferences
         show_labels = addon_prefs.show_labels
         obj = context.object
+        pose = obj.pose
+        rows = 4
         pose_lib = obj.pose_library
 
         layout = self.layout
@@ -198,6 +241,17 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
             sub_col.prop_search(obj, "pose_previews",
                                 context.scene, "pose_search",
                                 text="", icon='VIEWZOOM')
+            col.separator()
+            row = col.row()
+            row.prop(obj, "pose_apply_options", expand=True)
+            # col.template_list("UI_UL_list", "bone_groups", pose, "bone_groups", pose.bone_groups, "active_index", rows=rows)
+            # col.prop_menu_enum(obj.pose, "bone_groups")
+            row = col.row()
+            row.prop(obj, "pose_bone_groups", text="")
+            if obj.pose_apply_options == 'BONEGROUP':
+                row.enabled = True
+            else:
+                row.enabled = False
             col.separator()
             col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
             col.prop(pose_lib, "pose_previews_dir")
@@ -214,6 +268,15 @@ def register():
     bpy.types.Object.pose_previews_refresh = BoolProperty(
         name="Refresh thumbnails",
         default=False)
+    bpy.types.Object.pose_apply_options = EnumProperty(
+        name="Apply pose to",
+        items=[('ALL', 'All', 'Apply the pose to all bones'),
+               ('SELECTED', 'Selected', 'Apply the pose to the selected bones'),
+               ('BONEGROUP', 'Bone Group', 'Apply the pose to the bones in a bone group')],
+        default='ALL')
+    bpy.types.Object.pose_bone_groups = EnumProperty(
+        name="Bone Group",
+        items=get_pose_bone_groups)
     bpy.types.Action.pose_previews_dir = StringProperty(
         name="Thumbnail Path",
         subtype='DIR_PATH',
