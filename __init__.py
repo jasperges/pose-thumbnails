@@ -19,7 +19,7 @@
 
 bl_info = {
     "name": "Pose Library Previews",
-    "author": "Jasper van Nieuwenhuizen (jasperge)",
+    "author": "Jasper van Nieuwenhuizen (jasperge), Pratik Solanki (draguu)",
     "version": (0, 1),
     "blender": (2, 7, 5),
     "location": "Properties > Armature > Pose Library Previews "
