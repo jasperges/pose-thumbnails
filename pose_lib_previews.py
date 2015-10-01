@@ -170,6 +170,97 @@ class PoseLibPreviewRefresh(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class PoseLibAddPose(bpy.types.Operator):
+
+    """Add a pose to the Pose Library"""
+
+    bl_description = "Add a pose to the Pose Library"
+    bl_idname = "poselib.add_pose"
+    bl_label = "Add Pose"
+    bl_space_type = 'PROPERTIES'
+
+    def execute(self, context):
+        scene = context.scene
+        obj = context.object
+        frame = len(obj.pose_library.pose_markers) + 1
+        bpy.ops.poselib.pose_add(frame=frame)
+
+        if not obj.auto_generate_thumbnails:
+            return {'FINISHED'}
+
+        # Render and save thumbnail and update previews
+        resolution_x = scene.render.resolution_x
+        resolution_y = scene.render.resolution_y
+        resolution_percentage = scene.render.resolution_percentage
+        scene.render.resolution_x = 256
+        scene.render.resolution_y = 256
+        scene.render.resolution_percentage = 100
+        
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                for space in area.spaces:
+                    if space.type == 'VIEW_3D':
+                        show_only_render = space.show_only_render
+                        space.show_only_render = True
+
+        bpy.ops.render.opengl()
+
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                for space in area.spaces:
+                    if space.type == 'VIEW_3D':
+                        space.show_only_render = show_only_render
+
+        thumbnail = bpy.data.images['Render Result']
+        basename = obj.pose_library.pose_markers[frame - 1].name
+        basename = "_".join(("{frame:03d}".format(frame=frame), basename))
+        filepath = os.path.join(obj.pose_library['pose_previews_dir'], ".".join((basename, "png")))
+        filepath = bpy.path.abspath(filepath)
+        thumbnail.save_render(filepath)
+
+        scene.render.resolution_x = resolution_x
+        scene.render.resolution_y = resolution_y
+        scene.render.resolution_percentage = resolution_percentage
+
+        bpy.ops.poselib.refresh_thumbnails()
+
+        return {'FINISHED'}
+
+
+class PoseLibRemovePose(bpy.types.Operator):
+
+    """Remove a pose to the Pose Library"""
+
+    bl_description = "Remove a pose to the Pose Library"
+    bl_idname = "poselib.remove_pose"
+    bl_label = "Remove Pose"
+    bl_space_type = 'PROPERTIES'
+
+    def execute(self, context):
+        obj = context.object
+        print("Remove Pose")
+        print(obj.auto_generate_thumbnails)
+        print(obj.auto_remove_thumbnails)
+
+        return {'FINISHED'}
+
+
+class PoseLibTestOperator(bpy.types.Operator):
+
+    """Test Operator for Pose Library Previews"""
+
+    bl_description = "TEST"
+    bl_idname = "poselib.test"
+    bl_label = "TEST"
+    bl_space_type = 'PROPERTIES'
+
+    def execute(self, context):
+        obj = context.object
+        print(obj.pose_library.pose_markers.active.name)
+
+        return {'FINISHED'}
+
+
 class PoseLibPreviewPanel(bpy.types.Panel):
 
     """Creates a Panel in the armature context of the properties editor"""
@@ -211,8 +302,6 @@ class PoseLibPreviewPanel(bpy.types.Panel):
             col.separator()
             row = col.row()
             row.prop(obj, "pose_apply_options", expand=True)
-            # col.template_list("UI_UL_list", "bone_groups", pose, "bone_groups", pose.bone_groups, "active_index", rows=rows)
-            # col.prop_menu_enum(obj.pose, "bone_groups")
             row = col.row()
             row.prop(obj, "pose_bone_groups", text="")
             if obj.pose_apply_options == 'BONEGROUP':
@@ -224,6 +313,29 @@ class PoseLibPreviewPanel(bpy.types.Panel):
             col.prop(pose_lib, "pose_previews_dir")
         if not obj.mode == 'POSE':
             layout.enabled = False
+
+        # Experimental - add poses and auto create thumbnails
+        if obj.pose_library:
+            col.separator()
+            col.separator()
+            col.label(text="----------")
+            col.separator()
+            col.separator()
+            col.label(text="Pose Library Manager")
+            # list of poses in pose library
+            row = col.row()
+            row.template_list("UI_UL_list", "pose_markers",
+                              obj.pose_library, "pose_markers",
+                              obj.pose_library.pose_markers,
+                              "active_index", rows=3)
+
+            row = col.row(align=True)
+            row.operator("poselib.add_pose")
+            row.operator("poselib.remove_pose")
+            row = col.row(align=True)
+            row.prop(obj, "auto_generate_thumbnails", toggle=True)
+            row.prop(obj, "auto_remove_thumbnails", toggle=True)
+            # col.operator("poselib.test")
 
 
 class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
@@ -267,8 +379,6 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
             col.separator()
             row = col.row()
             row.prop(obj, "pose_apply_options", expand=True)
-            # col.template_list("UI_UL_list", "bone_groups", pose, "bone_groups", pose.bone_groups, "active_index", rows=rows)
-            # col.prop_menu_enum(obj.pose, "bone_groups")
             row = col.row()
             row.prop(obj, "pose_bone_groups", text="")
             if obj.pose_apply_options == 'BONEGROUP':
@@ -300,6 +410,12 @@ def register():
     bpy.types.Object.pose_bone_groups = EnumProperty(
         name="Bone Group",
         items=get_pose_bone_groups)
+    bpy.types.Object.auto_generate_thumbnails = BoolProperty(
+        name="Generate thumbnails",
+        default=True)
+    bpy.types.Object.auto_remove_thumbnails = BoolProperty(
+        name="Remove thumbnails",
+        default=True)
     bpy.types.Action.pose_previews_dir = StringProperty(
         name="Thumbnail Path",
         subtype='DIR_PATH',
