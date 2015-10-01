@@ -8,6 +8,7 @@ else:
 
 import os
 import re
+import copy
 import bpy
 from bpy.props import (StringProperty,
                        BoolProperty,
@@ -238,9 +239,21 @@ class PoseLibRemovePose(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.object
-        print("Remove Pose")
-        print(obj.auto_generate_thumbnails)
-        print(obj.auto_remove_thumbnails)
+        pose = obj.pose_library.pose_markers.active
+        pose_frame = copy.copy(pose.frame)
+        bpy.ops.poselib.pose_remove(pose=pose.name)
+
+        if not obj.auto_remove_thumbnails:
+            return {'FINISHED'}
+
+        thumb_dir = bpy.path.abspath(obj.pose_library['pose_previews_dir'])
+        for _, _, files in os.walk(thumb_dir):
+            for f in files:
+                match = re.match(r"([0-9]+).*?", f)
+                if match and int(match.groups()[0]) == pose_frame:
+                    os.remove(os.path.join(thumb_dir, f))
+
+        bpy.ops.poselib.refresh_thumbnails()
 
         return {'FINISHED'}
 
@@ -284,8 +297,6 @@ class PoseLibPreviewPanel(bpy.types.Panel):
         addon_prefs = user_prefs.addons[__package__].preferences
         show_labels = addon_prefs.show_labels
         obj = context.object
-        pose = obj.pose
-        rows = 4
         pose_lib = obj.pose_library
 
         layout = self.layout
@@ -314,7 +325,7 @@ class PoseLibPreviewPanel(bpy.types.Panel):
         if not obj.mode == 'POSE':
             layout.enabled = False
 
-        # Experimental - add poses and auto create thumbnails
+        # Experimental - add/remove poses and auto create/remove thumbnails
         if obj.pose_library:
             col.separator()
             col.separator()
@@ -330,8 +341,14 @@ class PoseLibPreviewPanel(bpy.types.Panel):
                               "active_index", rows=3)
 
             row = col.row(align=True)
-            row.operator("poselib.add_pose")
-            row.operator("poselib.remove_pose")
+            subcol = row.column(align=True)
+            subcol.operator("poselib.add_pose")
+            subcol = row.column(align=True)
+            subcol.operator("poselib.remove_pose")
+            if obj.pose_library.pose_markers.active:
+                subcol.enabled = True
+            else:
+                subcol.enabled = False
             row = col.row(align=True)
             row.prop(obj, "auto_generate_thumbnails", toggle=True)
             row.prop(obj, "auto_remove_thumbnails", toggle=True)
@@ -361,8 +378,6 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
         addon_prefs = user_prefs.addons[__package__].preferences
         show_labels = addon_prefs.show_labels
         obj = context.object
-        pose = obj.pose
-        rows = 4
         pose_lib = obj.pose_library
 
         layout = self.layout
