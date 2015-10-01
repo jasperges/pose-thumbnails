@@ -183,7 +183,8 @@ class PoseLibAddPose(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         obj = context.object
-        frame = len(obj.pose_library.pose_markers) + 1
+        # frame = len(obj.pose_library.pose_markers) + 1
+        frame = obj.pose_library.pose_markers[-1].frame + 1
         bpy.ops.poselib.pose_add(frame=frame)
 
         if not obj.auto_generate_thumbnails:
@@ -213,7 +214,12 @@ class PoseLibAddPose(bpy.types.Operator):
                         space.show_only_render = show_only_render
 
         thumbnail = bpy.data.images['Render Result']
-        basename = obj.pose_library.pose_markers[frame - 1].name
+        for marker in obj.pose_library.pose_markers:
+            if marker.frame == frame:
+                basename = marker.name
+            else:
+                basename = ""
+        # basename = obj.pose_library.pose_markers[frame - 1].name
         basename = "_".join(("{frame:03d}".format(frame=frame), basename))
         filepath = os.path.join(obj.pose_library['pose_previews_dir'], ".".join((basename, "png")))
         filepath = bpy.path.abspath(filepath)
