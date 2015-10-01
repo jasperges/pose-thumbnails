@@ -181,25 +181,48 @@ class PoseLibPreviewPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
+        user_prefs = context.user_preferences
+        addon_prefs = user_prefs.addons[__package__].preferences
         obj = context.object
-        return obj and obj.type == 'ARMATURE' and obj.pose_library
+
+        return (obj and obj.type == 'ARMATURE'
+                and addon_prefs.add_3dview_prop_panel)
 
     def draw(self, context):
         user_prefs = context.user_preferences
         addon_prefs = user_prefs.addons[__package__].preferences
         show_labels = addon_prefs.show_labels
         obj = context.object
+        pose = obj.pose
+        rows = 4
         pose_lib = obj.pose_library
 
         layout = self.layout
         col = layout.column(align=False)
-        col.template_icon_view(obj, "pose_previews",
-                               show_labels=show_labels)
-        col.separator()
-        col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
-        col.prop(pose_lib, "pose_previews_dir")
-
-        if not pose_lib:
+        col.template_ID(obj, "pose_library")
+        if obj.pose_library:
+            col.separator()
+            sub_col = col.column(align=True)
+            sub_col.template_icon_view(obj, "pose_previews",
+                                       show_labels=show_labels)
+            sub_col.prop_search(obj, "pose_previews",
+                                context.scene, "pose_search",
+                                text="", icon='VIEWZOOM')
+            col.separator()
+            row = col.row()
+            row.prop(obj, "pose_apply_options", expand=True)
+            # col.template_list("UI_UL_list", "bone_groups", pose, "bone_groups", pose.bone_groups, "active_index", rows=rows)
+            # col.prop_menu_enum(obj.pose, "bone_groups")
+            row = col.row()
+            row.prop(obj, "pose_bone_groups", text="")
+            if obj.pose_apply_options == 'BONEGROUP':
+                row.enabled = True
+            else:
+                row.enabled = False
+            col.separator()
+            col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
+            col.prop(pose_lib, "pose_previews_dir")
+        if not obj.mode == 'POSE':
             layout.enabled = False
 
 
