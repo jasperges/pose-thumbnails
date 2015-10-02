@@ -14,7 +14,13 @@ class PoseLibPreviewPreferences(bpy.types.AddonPreferences):
         description="Show the labels of the preview thumbnails",
         default=False)
 
+    remove_standard_panel = bpy.props.BoolProperty(
+        name="Remove the standard Pose Library Panel",
+        description="Remove the standard Pose Library Panel",
+        default=True)
+
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "add_3dview_prop_panel")
+        # layout.prop(self, "remove_standard_panel")
         layout.prop(self, "show_labels")

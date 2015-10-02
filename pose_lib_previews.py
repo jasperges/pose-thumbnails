@@ -283,7 +283,7 @@ class PoseLibTestOperator(bpy.types.Operator):
 class PoseLibPreviewPanel(bpy.types.Panel):
 
     """Creates a Panel in the armature context of the properties editor"""
-    bl_label = "Pose Library Previews"
+    bl_label = "Pose Library (with thumbnails)"
     bl_idname = "DATA_PT_pose_previews"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -333,11 +333,7 @@ class PoseLibPreviewPanel(bpy.types.Panel):
 
         # Experimental - add/remove poses and auto create/remove thumbnails
         if obj.pose_library:
-            col.separator()
-            col.separator()
             col.label(text="----------")
-            col.separator()
-            col.separator()
             col.label(text="Pose Library Manager")
             # list of poses in pose library
             row = col.row()
@@ -345,6 +341,7 @@ class PoseLibPreviewPanel(bpy.types.Panel):
                               obj.pose_library, "pose_markers",
                               obj.pose_library.pose_markers,
                               "active_index", rows=3)
+            col2 = row.column(align=True)
 
             row = col.row(align=True)
             subcol = row.column(align=True)
@@ -448,6 +445,13 @@ def register():
     pcoll.pose_previews = ()
     preview_collections["pose_previews"] = pcoll
 
+    user_prefs = bpy.context.user_preferences
+    addon_prefs = user_prefs.addons[__package__].preferences
+    if addon_prefs.remove_standard_panel:
+        for pt in bpy.types.Panel.__subclasses__():
+            if 'DATA_PT_pose_library' in pt.__name__ and "bl_rna" in pt.__dict__:
+                bpy.utils.unregister_class(pt)
+
 
 def unregister():
     for pcoll in preview_collections.values():
@@ -456,3 +460,7 @@ def unregister():
 
     del bpy.types.Object.pose_previews
     del bpy.types.Action.pose_previews_dir
+
+    for pt in bpy.types.Panel.__subclasses__():
+        if 'DATA_PT_pose_library' in pt.__name__ and not "bl_rna" in pt.__dict__:
+            bpy.utils.register_class(pt)
