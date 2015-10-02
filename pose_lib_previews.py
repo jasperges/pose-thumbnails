@@ -187,7 +187,10 @@ class PoseLibAddPose(bpy.types.Operator):
         frame = obj.pose_library.pose_markers[-1].frame + 1
         bpy.ops.poselib.pose_add(frame=frame)
 
-        if not obj.auto_generate_thumbnails:
+        user_prefs = bpy.context.user_preferences
+        addon_prefs = user_prefs.addons[__package__].preferences
+
+        if not addon_prefs.auto_generate_thumbnails:
             return {'FINISHED'}
 
         # Render and save thumbnail and update previews
@@ -249,7 +252,10 @@ class PoseLibRemovePose(bpy.types.Operator):
         pose_frame = copy.copy(pose.frame)
         bpy.ops.poselib.pose_remove(pose=pose.name)
 
-        if not obj.auto_remove_thumbnails:
+        user_prefs = bpy.context.user_preferences
+        addon_prefs = user_prefs.addons[__package__].preferences
+
+        if not addon_prefs.auto_remove_thumbnails:
             return {'FINISHED'}
 
         thumb_dir = bpy.path.abspath(obj.pose_library['pose_previews_dir'])
@@ -260,6 +266,51 @@ class PoseLibRemovePose(bpy.types.Operator):
                     os.remove(os.path.join(thumb_dir, f))
 
         bpy.ops.poselib.refresh_thumbnails()
+
+        return {'FINISHED'}
+
+
+class PoseLibApplyPose(bpy.types.Operator):
+
+    """Apply a pose to the armature"""
+
+    bl_description = "Apply a pose to the armature"
+    bl_idname = "poselib.pose_apply"
+    bl_label = "Apply Pose"
+    bl_space_type = 'PROPERTIES'
+
+    def execute(self, context):
+        obj = context.object
+        value = obj.pose_library.pose_markers.active_index
+
+        if obj.pose_apply_options in ('ALL', 'BONEGROUP'):
+            selected_bones = [pb.name for pb in context.selected_pose_bones]
+
+        if obj.pose_apply_options == 'ALL':
+            for bone in obj.data.bones:
+                bone.select = True
+        elif obj.pose_apply_options == 'BONEGROUP':
+            for bone in obj.data.bones:
+                bone.select = False
+            bone_group = obj.pose_bone_groups
+            for bone in obj.pose.bones:
+                try:
+                    if bone.bone_group.name.lower() == bone_group.lower():
+                        obj.data.bones[bone.name].select = True
+                except AttributeError:
+                    pass
+
+        if obj.pose_library.pose_markers:
+            bpy.ops.poselib.apply_pose(pose_index=value)
+
+        if obj.pose_apply_options in ('ALL', 'BONEGROUP'):
+            for bone in obj.data.bones:
+                if bone.name in selected_bones:
+                    bone.select = True
+                else:
+                    bone.select = False
+
+        obj['pose_previews'] = obj.pose_library.pose_markers.active_index
 
         return {'FINISHED'}
 
@@ -303,12 +354,12 @@ class PoseLibPreviewPanel(bpy.types.Panel):
         addon_prefs = user_prefs.addons[__package__].preferences
         show_labels = addon_prefs.show_labels
         obj = context.object
-        pose_lib = obj.pose_library
+        poselib = obj.pose_library
 
         layout = self.layout
         col = layout.column(align=False)
-        col.template_ID(obj, "pose_library")
-        if obj.pose_library:
+        # col.template_ID(obj, "pose_library")
+        if poselib:
             col.separator()
             sub_col = col.column(align=True)
             sub_col.template_icon_view(obj, "pose_previews",
@@ -319,42 +370,58 @@ class PoseLibPreviewPanel(bpy.types.Panel):
             col.separator()
             row = col.row()
             row.prop(obj, "pose_apply_options", expand=True)
-            row = col.row()
-            row.prop(obj, "pose_bone_groups", text="")
             if obj.pose_apply_options == 'BONEGROUP':
-                row.enabled = True
-            else:
-                row.enabled = False
+                row = col.row()
+                row.prop(obj, "pose_bone_groups", text="")
+            # if obj.pose_apply_options == 'BONEGROUP':
+            #     row.enabled = True
+            # else:
+            #     row.enabled = False
             col.separator()
-            col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
-            col.prop(pose_lib, "pose_previews_dir")
+            # col.operator("poselib.refresh_thumbnails", icon='FILE_REFRESH')
         if not obj.mode == 'POSE':
             layout.enabled = False
 
-        # Experimental - add/remove poses and auto create/remove thumbnails
-        if obj.pose_library:
-            col.label(text="----------")
-            col.label(text="Pose Library Manager")
-            # list of poses in pose library
-            row = col.row()
-            row.template_list("UI_UL_list", "pose_markers",
-                              obj.pose_library, "pose_markers",
-                              obj.pose_library.pose_markers,
-                              "active_index", rows=3)
-            col2 = row.column(align=True)
+        # New Pose Library Manager (adds some extra functionality, like generating thumbnails)
+        if context.scene.pose_manager:
+            icon = 'TRIA_DOWN'
+        else:
+            icon = 'TRIA_RIGHT'
+        col.separator()
+        col.prop(context.scene, "pose_manager", icon=icon,
+                 text="Pose Library Manager",
+                 icon_only=True, emboss=True)
+        if context.scene.pose_manager:
+            col.template_ID(obj, "pose_library", new="poselib.new", unlink="poselib.unlink")
+            if poselib:
+                # list of poses in pose library
+                row = col.row()
+                row.template_list("UI_UL_list", "pose_markers",
+                                  poselib, "pose_markers",
+                                  poselib.pose_markers,
+                                  "active_index", rows=3)
+                col2 = row.column(align=True)
+                col2.operator("poselib.add_pose", icon='ZOOMIN', text="")
+                col2.operator_context = 'EXEC_DEFAULT'
+                pose_marker_active = poselib.pose_markers.active
+                if pose_marker_active is not None:
+                    col2.operator("poselib.remove_pose", icon='ZOOMOUT', text="")
+                    col2.operator("poselib.pose_apply", icon='ZOOM_SELECTED', text="")
+                col2.operator("poselib.action_sanitize", icon='HELP', text="")
+                col.prop(poselib, "pose_previews_dir")
 
-            row = col.row(align=True)
-            subcol = row.column(align=True)
-            subcol.operator("poselib.add_pose")
-            subcol = row.column(align=True)
-            subcol.operator("poselib.remove_pose")
-            if obj.pose_library.pose_markers.active:
-                subcol.enabled = True
-            else:
-                subcol.enabled = False
-            row = col.row(align=True)
-            row.prop(obj, "auto_generate_thumbnails", toggle=True)
-            row.prop(obj, "auto_remove_thumbnails", toggle=True)
+            # row = col.row(align=True)
+            # subcol = row.column(align=True)
+            # subcol.operator("poselib.add_pose")
+            # subcol = row.column(align=True)
+            # subcol.operator("poselib.remove_pose")
+            # if poselib.pose_markers.active:
+            #     subcol.enabled = True
+            # else:
+            #     subcol.enabled = False
+            # row = col.row(align=True)
+            # row.prop(obj, "auto_generate_thumbnails", toggle=True)
+            # row.prop(obj, "auto_remove_thumbnails", toggle=True)
             # col.operator("poselib.test")
 
 
@@ -413,6 +480,9 @@ class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
 def register():
     bpy.types.Scene.pose_search = bpy.props.CollectionProperty(
         type=PoseLibSearch)
+    bpy.types.Scene.pose_manager = bpy.props.BoolProperty(
+        name="Pose Library Manager",
+        default=False)
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
         update=update_pose)
@@ -428,16 +498,16 @@ def register():
     bpy.types.Object.pose_bone_groups = EnumProperty(
         name="Bone Group",
         items=get_pose_bone_groups)
-    bpy.types.Object.auto_generate_thumbnails = BoolProperty(
-        name="Generate thumbnails",
-        default=True)
-    bpy.types.Object.auto_remove_thumbnails = BoolProperty(
-        name="Remove thumbnails",
-        default=True)
+    # bpy.types.Object.auto_generate_thumbnails = BoolProperty(
+    #     name="Generate thumbnails",
+    #     default=True)
+    # bpy.types.Object.auto_remove_thumbnails = BoolProperty(
+    #     name="Remove thumbnails",
+    #     default=True)
     bpy.types.Action.pose_previews_dir = StringProperty(
         name="Thumbnail Path",
         subtype='DIR_PATH',
-        default="",
+        default="//",
         update=filepath_update)
 
     pcoll = bpy.utils.previews.new()
@@ -458,7 +528,11 @@ def unregister():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
 
+    del bpy.types.Scene.pose_search
     del bpy.types.Object.pose_previews
+    del bpy.types.Object.pose_previews_refresh
+    del bpy.types.Object.pose_apply_options
+    del bpy.types.Object.pose_bone_groups
     del bpy.types.Action.pose_previews_dir
 
     for pt in bpy.types.Panel.__subclasses__():
