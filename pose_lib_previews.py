@@ -204,8 +204,6 @@ class PoseLibAddPose(bpy.types.Operator):
         scene.render.resolution_y = 256
         scene.render.resolution_percentage = 100
 
-        show_only_render = False
-
         for window in context.window_manager.windows:
             for area in window.screen.areas:
                 for space in area.spaces:
@@ -219,7 +217,8 @@ class PoseLibAddPose(bpy.types.Operator):
             for area in window.screen.areas:
                 for space in area.spaces:
                     if space.type == 'VIEW_3D':
-                        space.show_only_render = show_only_render
+                        # space.show_only_render = show_only_render
+                        space.show_only_render = False
 
         thumbnail = bpy.data.images['Render Result']
         for marker in obj.pose_library.pose_markers:
@@ -349,7 +348,7 @@ class PoseLibPreviewPanel(bpy.types.Panel):
         col = layout.column(align=False)
         # col.template_ID(obj, "pose_library")
         if poselib:
-            col.separator()
+            # col.separator()
             sub_col = col.column(align=True)
             sub_col.template_icon_view(obj, "pose_previews",
                                        show_labels=show_labels)
@@ -377,10 +376,13 @@ class PoseLibPreviewPanel(bpy.types.Panel):
         else:
             icon = 'TRIA_RIGHT'
         col.separator()
-        col.prop(context.scene, "pose_manager", icon=icon,
-                 text="Pose Library Manager",
-                 icon_only=True, emboss=True)
+        # col.prop(context.scene, "pose_manager", icon=icon,
+        #          text="Pose Library Manager",
+        #          icon_only=True, emboss=True)
+        col.label(text="Pose Library Manager")
+        col.separator()
         if context.scene.pose_manager:
+        # if True:
             col.template_ID(obj, "pose_library", new="poselib.new", unlink="poselib.unlink")
             if poselib:
                 # list of poses in pose library
@@ -457,7 +459,7 @@ def register():
         type=PoseLibSearch)
     bpy.types.Scene.pose_manager = bpy.props.BoolProperty(
         name="Pose Library Manager",
-        default=False)
+        default=True)
     bpy.types.Object.pose_previews = EnumProperty(
         items=generate_previews,
         update=update_pose)
@@ -504,6 +506,7 @@ def unregister():
     preview_collections.clear()
 
     del bpy.types.Scene.pose_search
+    del bpy.types.Scene.pose_manager
     del bpy.types.Object.pose_previews
     del bpy.types.Object.pose_previews_refresh
     del bpy.types.Object.pose_apply_options
