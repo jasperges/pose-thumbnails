@@ -67,10 +67,10 @@ def generate_previews(self, context):
 
             label = os.path.splitext(name)[0]
             match = re.match(r"([0-9]+)[-_\.]?(.*)?", label)
-            try:
-                num = int(match.groups()[0])
-            except (ValueError, TypeError, IndexError, AttributeError):
-                num = i + 1
+            # try:
+            #     num = int(match.groups()[0])
+            # except (ValueError, TypeError, IndexError, AttributeError):
+            num = i + 1
             try:
                 pose_name = match.groups()[1]
             except (TypeError, IndexError, AttributeError):
