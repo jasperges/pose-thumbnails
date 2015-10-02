@@ -2,6 +2,8 @@
 
 Pose Lib Preview is a simple addon which adds the ability to have preview images for a Pose Library.
 
+**Warning: This addon is very much a work in progress. I consider it more as a proof of concept then a proper addon at this point. So use at your own risk and expect some/a lot rough corners.**
+
 ## Installation
 
 Download and put the `pose_lib_preview` in your Blender addons folder or use the `Install from File...` option within Blender.
