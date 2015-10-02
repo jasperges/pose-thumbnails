@@ -320,22 +320,6 @@ class PoseLibApplyPose(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class PoseLibTestOperator(bpy.types.Operator):
-
-    """Test Operator for Pose Library Previews"""
-
-    bl_description = "TEST"
-    bl_idname = "poselib.test"
-    bl_label = "TEST"
-    bl_space_type = 'PROPERTIES'
-
-    def execute(self, context):
-        obj = context.object
-        print(obj.pose_library.pose_markers.active.name)
-
-        return {'FINISHED'}
-
-
 class PoseLibPreviewPanel(bpy.types.Panel):
 
     """Creates a Panel in the armature context of the properties editor"""
