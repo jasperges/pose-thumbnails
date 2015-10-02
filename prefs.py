@@ -17,7 +17,7 @@ class PoseLibPreviewPreferences(bpy.types.AddonPreferences):
     remove_standard_panel = bpy.props.BoolProperty(
         name="Remove the standard Pose Library Panel",
         description="Remove the standard Pose Library Panel",
-        default=False)
+        default=True)
 
     auto_generate_thumbnails = bpy.props.BoolProperty(
         name="Automatically generate thumbnail",

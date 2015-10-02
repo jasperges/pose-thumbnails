@@ -184,7 +184,10 @@ class PoseLibAddPose(bpy.types.Operator):
         scene = context.scene
         obj = context.object
         # frame = len(obj.pose_library.pose_markers) + 1
-        frame = obj.pose_library.pose_markers[-1].frame + 1
+        if not obj.pose_library.pose_markers:
+            frame = 1
+        else:
+            frame = obj.pose_library.pose_markers[-1].frame + 1
         bpy.ops.poselib.pose_add(frame=frame)
 
         user_prefs = bpy.context.user_preferences
@@ -200,7 +203,9 @@ class PoseLibAddPose(bpy.types.Operator):
         scene.render.resolution_x = 256
         scene.render.resolution_y = 256
         scene.render.resolution_percentage = 100
-        
+
+        show_only_render = False
+
         for window in context.window_manager.windows:
             for area in window.screen.areas:
                 for space in area.spaces:
@@ -409,20 +414,6 @@ class PoseLibPreviewPanel(bpy.types.Panel):
                     col2.operator("poselib.pose_apply", icon='ZOOM_SELECTED', text="")
                 col2.operator("poselib.action_sanitize", icon='HELP', text="")
                 col.prop(poselib, "pose_previews_dir")
-
-            # row = col.row(align=True)
-            # subcol = row.column(align=True)
-            # subcol.operator("poselib.add_pose")
-            # subcol = row.column(align=True)
-            # subcol.operator("poselib.remove_pose")
-            # if poselib.pose_markers.active:
-            #     subcol.enabled = True
-            # else:
-            #     subcol.enabled = False
-            # row = col.row(align=True)
-            # row.prop(obj, "auto_generate_thumbnails", toggle=True)
-            # row.prop(obj, "auto_remove_thumbnails", toggle=True)
-            # col.operator("poselib.test")
 
 
 class PoseLibPreviewPropertiesPanel(bpy.types.Panel):
