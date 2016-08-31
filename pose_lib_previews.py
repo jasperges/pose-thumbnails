@@ -68,7 +68,7 @@ def generate_previews(self, context):
             label = os.path.splitext(name)[0]
             match = re.match(r"([0-9]+)[-_\.]?(.*)?", label)
             try:
-                num = int(match.groups()[0])
+                num = int(match.groups()[0], 10)
             except (ValueError, TypeError, IndexError, AttributeError) as ex:
                 log.warning('File %s does not have the expected format: %s', name, ex)
                 num = i + 1
