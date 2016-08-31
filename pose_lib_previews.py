@@ -5,7 +5,7 @@ if "bpy" in locals():
 else:
     from . import prefs
 
-
+import logging
 import os
 import re
 import bpy
@@ -14,6 +14,7 @@ from bpy.props import (StringProperty,
                        EnumProperty)
 import bpy.utils.previews
 
+log = logging.getLogger(__name__)
 
 # Dict to hold the ui previews collection
 preview_collections = {}
@@ -68,7 +69,8 @@ def generate_previews(self, context):
             match = re.match(r"([0-9]+)[-_\.]?(.*)?", label)
             try:
                 num = int(match.groups()[0])
-            except (ValueError, TypeError, IndexError, AttributeError):
+            except (ValueError, TypeError, IndexError, AttributeError) as ex:
+                log.warning('File %s does not have the expected format: %s', name, ex)
                 num = i + 1
             try:
                 pose_name = match.groups()[1]
