@@ -44,7 +44,7 @@ def generate_previews(self, context):
         if pcoll:
             pcoll.clear()
         image_paths = []
-        for fn in os.listdir(bpy.path.abspath(directory)):
+        for fn in sorted(os.listdir(bpy.path.abspath(directory))):
             if os.path.splitext(fn)[-1].lower() == ".png":
                 image_paths.append(fn)
 
