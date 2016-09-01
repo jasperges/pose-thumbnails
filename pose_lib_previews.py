@@ -24,7 +24,7 @@ preview_collections = {}
 def generate_previews(self, context):
     enum_items = []
 
-    if context is None:
+    if context is None or not self.pose_library:
         return enum_items
 
     obj = self
@@ -95,7 +95,7 @@ def generate_previews(self, context):
 def get_pose_bone_groups(self, context):
     enum_items = []
 
-    if context is None:
+    if context is None or not self.pose:
         return enum_items
 
     obj = self
