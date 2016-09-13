@@ -14,7 +14,7 @@ from bpy.props import (StringProperty,
                        EnumProperty)
 import bpy.utils.previews
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 # Dict to hold the ui previews collection
 preview_collections = {}
@@ -70,7 +70,7 @@ def generate_previews(self, context):
             try:
                 num = int(match.groups()[0], 10)
             except (ValueError, TypeError, IndexError, AttributeError) as ex:
-                log.warning('File %s does not have the expected format: %s', name, ex)
+                logger.warning('File %s does not have the expected format: %s', name, ex)
                 num = i + 1
             try:
                 pose_name = match.groups()[1]
