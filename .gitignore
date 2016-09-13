@@ -55,3 +55,6 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# docs (at least for now)
+docs
