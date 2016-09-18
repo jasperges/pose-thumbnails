@@ -96,10 +96,10 @@ def get_pose_thumbnails(self, context):
     logger.debug(sorted_image_paths)
     for i, name in enumerate(sorted_image_paths):
         filepath = os.path.join(thumbnail_dir, name)
-        frame = context.object.pose_library.pose_markers[i].frame
+        # frame = context.object.pose_library.pose_markers[i].frame
         display_name = os.path.splitext(name)[0].split('_', 1)[-1]
         thumbnail = pose_thumbnail_collection.load(filepath, filepath, 'IMAGE')
-        enum_items.append((str(frame), display_name, '', thumbnail.icon_id, i))
+        enum_items.append((str(i), display_name, '', thumbnail.icon_id, i))
     pose_thumbnail_collection.pose_thumbnails = enum_items
     pose_thumbnail_collection.thumbnail_dir = thumbnail_dir
     return pose_thumbnail_collection.pose_thumbnails
@@ -116,12 +116,15 @@ def update_pose(self, context):
     Returns:
         None
     '''
-    pose_frame = int(self.pose_thumbnails)
-    for i, pose_marker in enumerate(self.pose_markers):
-        if pose_marker.frame == pose_frame:
-            bpy.ops.poselib.apply_pose(pose_index=i)
-            logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
-    return
+    # pose_frame = int(self.pose_thumbnails)
+    # for i, pose_marker in enumerate(self.pose_markers):
+    #     if pose_marker.frame == pose_frame:
+    #         bpy.ops.poselib.apply_pose(pose_index=i)
+    #         logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
+    pose_index = int(self.pose_thumbnails)
+    bpy.ops.poselib.apply_pose(pose_index=pose_index)
+    pose_marker = context.object.pose_library.pose_markers[pose_index]
+    logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_marker.frame))
 
 
 # class PoseLibPreviewPanel(bpy.types.Panel):
