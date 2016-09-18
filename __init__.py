@@ -18,13 +18,12 @@
 
 
 bl_info = {
-    "name": "Pose Library Previews",
+    "name": "Pose Library Thumbnails",
     "author": "Jasper van Nieuwenhuizen (jasperge), Pratik Solanki (draguu)",
     "version": (0, 1),
     "blender": (2, 7, 5),
-    "location": "Properties > Armature > Pose Library Previews "
-                "and 3D View > Properties > Pose Library",
-    "description": "Add preview images for a pose Library",
+    "location": "Properties > Armature > Pose Library",
+    "description": "Add thumbnails for a pose Library",
     "warning": "wip",
     "wiki_url": "https://github.com/jasperges/pose_lib_preview/blob/master/README.md",
     "tracker_url": "https://github.com/jasperges/pose_lib_preview/issues",
@@ -34,10 +33,10 @@ bl_info = {
 
 if "bpy" in locals():
     import importlib
-    if "pose_lib_previews" in locals():
-        importlib.reload(pose_lib_previews)
+    if "pose_thumbnails" in locals():
+        importlib.reload(pose_thumbnails)
 else:
-    from . import pose_lib_previews
+    from . import pose_thumbnails
 
 import bpy
 
@@ -45,12 +44,12 @@ import bpy
 # Register
 def register():
     bpy.utils.register_module(__name__)
-    pose_lib_previews.register()
+    pose_thumbnails.register()
 
 
 def unregister():
     bpy.utils.unregister_module(__name__)
-    pose_lib_previews.unregister()
+    pose_thumbnails.unregister()
 
 
 if __name__ == "__main__":
