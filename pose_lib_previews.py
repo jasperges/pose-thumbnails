@@ -44,6 +44,8 @@ def previews_from_dir(self, context):
         return pcoll.pose_previews
     if previews_dir and os.path.isdir(previews_dir):
         logger.info("Scanning directory %s..." % (previews_dir))
+        if pcoll:
+            pcoll.clear()
         image_paths = get_images_from_dir(previews_dir)
         for i, name in enumerate(image_paths):
             filepath = os.path.join(previews_dir, name)
