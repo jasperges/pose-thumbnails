@@ -29,74 +29,65 @@ def get_images_from_dir(directory, sort=True):
     return sorted(valid_images)
 
 
+def sort_thumbnails(thumbnail):
+    poselib = thumbnail.id_data
+    for i, posemarker in enumerate(poselib.pose_markers):
+        if thumbnail.frame == posemarker.frame:
+            return i
+
+
+def get_no_thumbnail_image(pcoll):
+    no_thumbnail_path = os.path.join(
+        os.path.dirname(__file__),
+        'thumbnails',
+        'no_thumbnail.png',
+        )
+    no_thumbnail = pcoll.get('No Thumbnail') or pcoll.load(
+        'No Thumbnail',
+        no_thumbnail_path,
+        'IMAGE',
+        )
+    return no_thumbnail
+
+
+def get_enum_items(thumbnails, pcoll, no_thumbnail):
+    for thumbnail in thumbnails:
+        image = pcoll.get(thumbnail.filepath)
+        if not image:
+            image_path = os.path.normpath(bpy.path.abspath(thumbnail.filepath))
+            if not os.path.isfile(image_path):
+                image = no_thumbnail
+            else:
+                image = pcoll.load(
+                    thumbnail.filepath,
+                    image_path,
+                    'IMAGE',
+                    )
+        yield ((
+            str(thumbnail.frame),
+            thumbnail.name,
+            '',
+            image.icon_id,
+            thumbnail.index
+            ))
+
 def get_pose_thumbnails(self, context):
-    '''Return the items for the pose thumbnails EnumProperty.
-
-    Args:
-        self (PoseLibrary)
-        context (Blender context = bpy.context)
-
-    Returns:
-        list: sequence of string tuples for the enum items
-            The first three elements of the tuples are mandatory.
-            identifier: The identifier is used for Python access.
-            name: Name for the interace.
-            description: Used for documentation and tooltips.
-            icon: An icon string identifier or integer icon value.
-            number: Unique value used as the identifier for this item (stored
-                in file data). Use when the identifier may need to change.
-    '''
-    # def sort_poses(pose_enum):
-    #     for i, pose_marker in enumerate(context.object.pose_library.pose_markers):
-    #         if pose_marker.frame == int(pose_enum[0]):
-    #             return i
-
-    # enum_items = []
-    # if context is None or not context.object.pose_library.pose_markers:
-    #     return enum_items
-    # thumbnail_dir = '/Users/jasperge/projects/prive/blender/scripting/pose_previews_docs/pose_thumbnails/krab_clean/'
-    # pose_thumbnail_collection = preview_collections['pose_lib']
-    # logger.debug(pose_thumbnail_collection.pose_thumbnails)
-    # if pose_thumbnail_collection.pose_thumbnails:
-    #     sorted_thumbnails = sorted(pose_thumbnail_collection.pose_thumbnails, key=sort_poses)
-    #     logger.debug(sorted_thumbnails)
-    #     st = []
-    #     for i, t in enumerate(sorted_thumbnails):
-    #         st.append(list(t))
-    #         st[i][4] = i
-    #     sorted_thumbnails = [tuple(t) for t in st]
-    #     logger.debug(sorted_thumbnails)
-    #     pose_thumbnail_collection.pose_thumbnails = sorted_thumbnails
-    #     logger.debug('Returning old thumbnails, but sorted.')
-    #     return pose_thumbnail_collection.pose_thumbnails
-    # if thumbnail_dir == pose_thumbnail_collection.thumbnail_dir:
-    #     logger.debug('Thumbnail dir is still the same')
-    #     return pose_thumbnail_collection.pose_thumbnails
-    # logger.info("Scanning directory %s..." % (thumbnail_dir))
-    # image_paths = get_images_from_dir(thumbnail_dir)
-    # pose_markers = context.object.pose_library.pose_markers
-    # frame_sorted_pose_markers = sorted(pose_markers, key=lambda pose_marker: pose_marker.frame)
-    # zipper = zip(frame_sorted_pose_markers, image_paths)
-    # sorted_image_paths = sorted(zipper, key=lambda p: pose_markers.find(p[0].name))
-    # sorted_image_paths = [img[1] for img in sorted_image_paths]
-    # logger.debug(sorted_image_paths)
-    # for i, name in enumerate(sorted_image_paths):
-    #     filepath = os.path.join(thumbnail_dir, name)
-    #     frame = context.object.pose_library.pose_markers[i].frame
-    #     display_name = os.path.splitext(name)[0].split('_', 1)[-1]
-    #     thumbnail = pose_thumbnail_collection.load(filepath, filepath, 'IMAGE')
-    #     enum_items.append((str(frame), display_name, '', thumbnail.icon_id, i))
-    # pose_thumbnail_collection.pose_thumbnails = enum_items
-    # pose_thumbnail_collection.thumbnail_dir = thumbnail_dir
-    # return pose_thumbnail_collection.pose_thumbnails
-    enum_items = []
-    if context = None or not context.object.pose_library.pose_markers:
-        return enum_items
+    poselib = context.object.pose_library
+    if (context is None or
+        not poselib.pose_markers or
+        not poselib.pose_thumbnails.info):
+            return []
     pose_thumbnail_collection = preview_collections['pose_library']
     logger.debug(pose_thumbnail_collection.pose_thumbnails)
-    # upadate thumbnail indices
-    # sort thumbnails by indices
-    # create thumbnails
+    no_thumbnail = get_no_thumbnail_image(pose_thumbnail_collection)
+    sorted_thumbnails = sorted(poselib.pose_thumbnails.info, key=sort_thumbnails)
+    enum_items = get_enum_items(
+        sorted_thumbnails,
+        pose_thumbnail_collection,
+        no_thumbnail,
+        )
+    pose_thumbnail_collection.pose_thumbnails = enum_items
+    return pose_thumbnail_collection.pose_thumbnails
 
 
 def update_pose(self, context):
@@ -110,6 +101,7 @@ def update_pose(self, context):
     Returns:
         None
     '''
+    return
     pose_frame = int(self.pose_thumbnails)
     for i, pose_marker in enumerate(self.pose_markers):
         if pose_marker.frame == pose_frame:
@@ -123,15 +115,21 @@ def pose_thumbnails_draw(self, context):
     user_prefs = context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
     show_labels = addon_prefs.show_labels
-    obj = context.object
+    poselib = context.object.pose_library
     layout = self.layout
-    row = layout.row()
-    row.operator(AddPoseThumbnail.bl_idname)
-    # row.template_icon_view(
-    #     obj.pose_library.pose_thumbnails,
-    #     'thumbnails',
-    #     show_labels=show_labels,
-    #     )
+    col = layout.column()
+    col.template_icon_view(
+        poselib.pose_thumbnails,
+        'thumbnails',
+        show_labels=show_labels,
+        )
+    for thumbnail in poselib.pose_thumbnails.info:
+        if thumbnail.frame == poselib.pose_markers.active.frame:
+            text = 'Update Thumbnail'
+            break
+    else:
+        text = 'Add Thumbnail'
+    col.operator(AddPoseThumbnail.bl_idname, text=text)
 
 
 class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
@@ -162,7 +160,7 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
         active_posemarker_index = poselib.pose_markers.active_index
         for thumbnail in poselib.pose_thumbnails.info:
             if thumbnail.frame == active_posemarker.frame:
-                thumbnail.name = active_posemarker.name
+                thumbnail.name = active_posemarker.name[:-4]
                 thumbnail.index = active_posemarker_index
                 thumbnail.filepath = filepath
                 break
@@ -172,6 +170,7 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
             thumbnail.index = active_posemarker_index
             thumbnail.frame = active_posemarker.frame
             thumbnail.filepath = filepath
+            active_posemarker.name = ' '.join((active_posemarker.name, '[T]'))
         return {'FINISHED'}
 
     def draw(self, context):
@@ -208,10 +207,10 @@ class PoselibThumbnails(bpy.types.PropertyGroup):
 class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
     info = bpy.props.CollectionProperty(
         type=PoselibThumbnails)
-    # thumbnails = bpy.props.EnumProperty(
-    #     items=get_pose_thumbnails,
-    #     update=update_pose,
-    #     )
+    thumbnails = bpy.props.EnumProperty(
+        items=get_pose_thumbnails,
+        update=update_pose,
+        )
 
 
 def register():
