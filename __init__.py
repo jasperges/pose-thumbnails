@@ -37,7 +37,6 @@ if "bpy" in locals():
         importlib.reload(pose_thumbnails)
 else:
     from . import pose_thumbnails
-
 import bpy
 
 
