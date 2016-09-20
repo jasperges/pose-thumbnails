@@ -126,13 +126,13 @@ def sort_thumbnails(poselib):
             yield thumbnail
 
 
-def get_enum_items(thumbnails, pcoll, no_thumbnail_image):
+def get_enum_items(thumbnails, pcoll):
     for thumbnail in thumbnails:
         image = pcoll.get(thumbnail.filepath)
         if not image:
             image_path = os.path.normpath(bpy.path.abspath(thumbnail.filepath))
             if not os.path.isfile(image_path):
-                image = no_thumbnail_image
+                image = get_no_thumbnail_image(pcoll)
             else:
                 image = pcoll.load(
                     thumbnail.filepath,
@@ -155,12 +155,10 @@ def get_pose_thumbnails(self, context):
         not poselib.pose_thumbnails.info):
             return []
     pcoll = preview_collections['pose_library']
-    no_thumbnail_image = get_no_thumbnail_image(pcoll)
     sorted_thumbnails = sort_thumbnails(poselib)
     enum_items = get_enum_items(
         sorted_thumbnails,
         pcoll,
-        no_thumbnail_image,
         )
     pcoll.pose_thumbnails = enum_items
     return pcoll.pose_thumbnails
@@ -236,19 +234,17 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
         poselib = context.object.pose_library
         active_posemarker = poselib.pose_markers.active
         active_posemarker_index = poselib.pose_markers.active_index
-        for thumbnail in poselib.pose_thumbnails.info:
-            if thumbnail.frame == active_posemarker.frame:
-                thumbnail.name = active_posemarker.name[:-4]
-                thumbnail.index = active_posemarker_index
-                thumbnail.filepath = filepath
-                break
+        if not active_posemarker.name.endswith('[T]'):
+            name = active_posemarker.name
+            active_posemarker.name = ' '.join((name, '[T]'))
         else:
-            thumbnail = poselib.pose_thumbnails.info.add()
-            thumbnail.name = active_posemarker.name
-            thumbnail.index = active_posemarker_index
-            thumbnail.frame = active_posemarker.frame
-            thumbnail.filepath = filepath
-            active_posemarker.name = ' '.join((active_posemarker.name, '[T]'))
+            name = active_posemarker.name[:-4]
+        thumbnail = (get_thumbnail_from_pose(active_posemarker) or
+                     poselib.pose_thumbnails.info.add())
+        thumbnail.name = name
+        thumbnail.index = active_posemarker_index
+        thumbnail.frame = active_posemarker.frame
+        thumbnail.filepath = filepath
         return {'FINISHED'}
 
     def draw(self, context):
@@ -292,20 +288,12 @@ class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
 
 
 def register():
-    # bpy.utils.register_class(PoselibThumbnails)
     bpy.types.Action.pose_thumbnails = bpy.props.PointerProperty(
         type=PoselibThumbnailsInfo)
-    # bpy.types.Action.pose_thumbnails = EnumProperty(
-    #     items=get_pose_thumbnails,
-    #     update=update_pose,
-    #     )
-    # bpy.types.Action.pose_info = bpy.props.CollectionProperty(
-    #     type=PoselibThumbnails)
 
     bpy.types.DATA_PT_pose_library.prepend(pose_thumbnails_draw)
 
     pcoll = bpy.utils.previews.new()
-    # pcoll.thumbnail_dir = ''
     pcoll.pose_thumbnails = ()
     preview_collections['pose_library'] = pcoll
 
@@ -316,5 +304,4 @@ def unregister():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
 
-    # del bpy.types.Action.pose_info
     del bpy.types.Action.pose_thumbnails
