@@ -29,19 +29,65 @@ def get_images_from_dir(directory, sort=True):
     return sorted(valid_images)
 
 
-def sort_thumbnails(thumbnail):
+def get_thumbnail_from_pose(pose):
+    '''Get the thumbnail that belongs to the pose.
+
+    Args:
+        pose (pose_marker): a pose in the pose library
+
+    Returns:
+        thumbnail PropertyGroup
+    '''
+    if pose is None:
+        return
+    poselib = pose.id_data
+    for thumbnail in poselib.pose_thumbnails.info:
+        if thumbnail.frame == pose.frame:
+            return thumbnail
+
+
+def get_pose_from_thumbnail(thumbnail):
+    '''Get the pose that belongs to the thumbnail.
+
+    Args:
+        thumbnail (PropertyGroup): thumbnail info of a pose
+
+    Returns:
+        pose_marker
+    '''
+    if thumbnail is None:
+        return
+    poselib = thumbnail.id_data
+    for pose in poselib.pose_markers:
+        if pose.frame == thumbnail.frame:
+            return pose
+
+
+def get_pose_index(pose):
+    '''Get the index of the pose.'''
+    poselib = pose.id_data
+    return poselib.pose_markers.find(pose.name)
+
+
+def get_thumbnail_index(thumbnail):
     poselib = thumbnail.id_data
     for i, posemarker in enumerate(poselib.pose_markers):
         if thumbnail.frame == posemarker.frame:
             return i
 
 
-def get_no_thumbnail_image(pcoll):
+def get_no_thumbnail_path():
+    '''Get the path to the 'no thumbnail' image.'''
     no_thumbnail_path = os.path.join(
         os.path.dirname(__file__),
         'thumbnails',
         'no_thumbnail.png',
         )
+    return no_thumbnail_path
+
+
+def get_no_thumbnail_image(pcoll):
+    no_thumbnail_path = get_no_thumbnail_path()
     no_thumbnail = pcoll.get('No Thumbnail') or pcoll.load(
         'No Thumbnail',
         no_thumbnail_path,
@@ -50,13 +96,43 @@ def get_no_thumbnail_image(pcoll):
     return no_thumbnail
 
 
-def get_enum_items(thumbnails, pcoll, no_thumbnail):
+def add_no_thumbnail_to_pose(pose):
+    '''Add info with 'no thumbnail' image to the pose.'''
+    poselib = pose.id_data
+    no_thumbnail = poselib.pose_thumbnails.info.add()
+    no_thumbnail.name = pose.name
+    no_thumbnail.index = get_pose_index(pose)
+    no_thumbnail.frame = pose.frame
+    no_thumbnail.filepath = get_no_thumbnail_path()
+    return no_thumbnail
+
+
+def sort_thumbnails(poselib):
+    '''Return the thumbnail info of a pose library sorted by pose index.
+
+    If a pose doesn't have a thumbnail return the 'no thumbnail' image.
+
+    Args:
+        poselib (pose library): The pose library for which to get the thumbnails.
+
+    Returns:
+        list: the sorted pose thumbnail info
+    '''
+    pcoll = preview_collections['pose_library']
+    for pose in poselib.pose_markers:
+        # yield get_thumbnail_from_pose(pose) or add_no_thumbnail_to_pose(pose)
+        thumbnail = get_thumbnail_from_pose(pose)
+        if thumbnail:
+            yield thumbnail
+
+
+def get_enum_items(thumbnails, pcoll, no_thumbnail_image):
     for thumbnail in thumbnails:
         image = pcoll.get(thumbnail.filepath)
         if not image:
             image_path = os.path.normpath(bpy.path.abspath(thumbnail.filepath))
             if not os.path.isfile(image_path):
-                image = no_thumbnail
+                image = no_thumbnail_image
             else:
                 image = pcoll.load(
                     thumbnail.filepath,
@@ -71,23 +147,23 @@ def get_enum_items(thumbnails, pcoll, no_thumbnail):
             thumbnail.index
             ))
 
+
 def get_pose_thumbnails(self, context):
     poselib = context.object.pose_library
     if (context is None or
         not poselib.pose_markers or
         not poselib.pose_thumbnails.info):
             return []
-    pose_thumbnail_collection = preview_collections['pose_library']
-    logger.debug(pose_thumbnail_collection.pose_thumbnails)
-    no_thumbnail = get_no_thumbnail_image(pose_thumbnail_collection)
-    sorted_thumbnails = sorted(poselib.pose_thumbnails.info, key=sort_thumbnails)
+    pcoll = preview_collections['pose_library']
+    no_thumbnail_image = get_no_thumbnail_image(pcoll)
+    sorted_thumbnails = sort_thumbnails(poselib)
     enum_items = get_enum_items(
         sorted_thumbnails,
-        pose_thumbnail_collection,
-        no_thumbnail,
+        pcoll,
+        no_thumbnail_image,
         )
-    pose_thumbnail_collection.pose_thumbnails = enum_items
-    return pose_thumbnail_collection.pose_thumbnails
+    pcoll.pose_thumbnails = enum_items
+    return pcoll.pose_thumbnails
 
 
 def update_pose(self, context):
@@ -95,18 +171,19 @@ def update_pose(self, context):
        item is changed).
 
     Args:
-        self (EnumProperty class)
+        self (pose library)
         context (blender context = bpy.context)
 
     Returns:
         None
     '''
-    return
-    pose_frame = int(self.pose_thumbnails)
-    for i, pose_marker in enumerate(self.pose_markers):
+    pose_frame = int(self.thumbnails)
+    poselib = self.id_data
+    for i, pose_marker in enumerate(poselib.pose_markers):
         if pose_marker.frame == pose_frame:
             bpy.ops.poselib.apply_pose(pose_index=i)
             logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
+            break
 
 
 def pose_thumbnails_draw(self, context):
@@ -123,10 +200,11 @@ def pose_thumbnails_draw(self, context):
         'thumbnails',
         show_labels=show_labels,
         )
-    for thumbnail in poselib.pose_thumbnails.info:
-        if thumbnail.frame == poselib.pose_markers.active.frame:
-            text = 'Update Thumbnail'
-            break
+    if not poselib.pose_markers.active:
+        return
+    thumbnail = get_thumbnail_from_pose(poselib.pose_markers.active)
+    if thumbnail and thumbnail.filepath != get_no_thumbnail_path():
+        text = 'Update Thumbnail'
     else:
         text = 'Add Thumbnail'
     col.operator(AddPoseThumbnail.bl_idname, text=text)
@@ -226,16 +304,16 @@ def register():
 
     bpy.types.DATA_PT_pose_library.prepend(pose_thumbnails_draw)
 
-    pose_thumbnail_collection = bpy.utils.previews.new()
-    # pose_thumbnail_collection.thumbnail_dir = ''
-    pose_thumbnail_collection.pose_thumbnails = ()
-    preview_collections['pose_library'] = pose_thumbnail_collection
+    pcoll = bpy.utils.previews.new()
+    # pcoll.thumbnail_dir = ''
+    pcoll.pose_thumbnails = ()
+    preview_collections['pose_library'] = pcoll
 
 
 def unregister():
     bpy.types.DATA_PT_pose_library.remove(pose_thumbnails_draw)
-    for pose_thumbnail_collection in preview_collections.values():
-        bpy.utils.previews.remove(pose_thumbnail_collection)
+    for pcoll in preview_collections.values():
+        bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
 
     # del bpy.types.Action.pose_info
