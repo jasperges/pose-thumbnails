@@ -18,38 +18,39 @@
 
 
 bl_info = {
-    "name": "Pose Library Thumbnails",
-    "author": "Jasper van Nieuwenhuizen (jasperge), Pratik Solanki (draguu)",
-    "version": (0, 1),
-    "blender": (2, 7, 5),
-    "location": "Properties > Armature > Pose Library",
-    "description": "Add thumbnails for a pose Library",
-    "warning": "wip",
-    "wiki_url": "https://github.com/jasperges/pose_lib_preview/blob/master/README.md",
-    "tracker_url": "https://github.com/jasperges/pose_lib_preview/issues",
-    "support": 'COMMUNITY',
-    "category": "Animation"}
+    'name': 'Pose Library Thumbnails',
+    'author': 'Jasper van Nieuwenhuizen (jasperge)',
+    'version': (0, 2),
+    'blender': (2, 7, 8),
+    'location': 'Properties > Armature > Pose Library',
+    'description': 'Add thumbnails for a pose Library',
+    'warning': 'wip',
+    'wiki_url': 'https://github.com/jasperges/pose_lib_preview/blob/master/README.md',
+    'tracker_url': 'https://github.com/jasperges/pose_lib_preview/issues',
+    'support': 'COMMUNITY',
+    'category': 'Animation'}
 
 
-if "bpy" in locals():
+if 'bpy' in locals():
     import importlib
-    if "pose_thumbnails" in locals():
+    if 'pose_thumbnails' in locals():
         importlib.reload(pose_thumbnails)
 else:
     from . import pose_thumbnails
 import bpy
 
 
-# Register
 def register():
+    '''Register all pose thumbnail related things.'''
     bpy.utils.register_module(__name__)
     pose_thumbnails.register()
 
 
 def unregister():
+    '''Unregister all pose thumbnails related things.'''
     bpy.utils.unregister_module(__name__)
     pose_thumbnails.unregister()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     register()

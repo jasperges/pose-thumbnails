@@ -2,9 +2,9 @@ import os
 import logging
 import re
 
-if "bpy" in locals():
+if 'bpy' in locals():
     import importlib
-    if "prefs" in locals():
+    if 'prefs' in locals():
         importlib.reload(prefs)
 else:
     from . import prefs
@@ -20,9 +20,9 @@ preview_collections = {}
 
 
 def get_images_from_dir(directory, sort=True):
-    """Get all image files in the directory."""
+    '''Get all image files in the directory.'''
     valid_images = []
-    image_extensions = ['.png', '.jpg', '.jpeg']   # !!!
+    image_extensions = ['.png', '.jpg', '.jpeg']
     for filename in os.listdir(directory):
         if os.path.splitext(filename)[-1].lower() in image_extensions:
             valid_images.append(filename)
@@ -70,6 +70,7 @@ def get_pose_index(pose):
 
 
 def get_thumbnail_index(thumbnail):
+    '''Return the index of the pose of the thumbnail.'''
     poselib = thumbnail.id_data
     for i, posemarker in enumerate(poselib.pose_markers):
         if thumbnail.frame == posemarker.frame:
@@ -87,6 +88,7 @@ def get_no_thumbnail_path():
 
 
 def get_no_thumbnail_image(pcoll):
+    '''Return the 'no thumbnail' preview icon.'''
     no_thumbnail_path = get_no_thumbnail_path()
     no_thumbnail = pcoll.get('No Thumbnail') or pcoll.load(
         'No Thumbnail',
@@ -127,6 +129,7 @@ def sort_thumbnails(poselib):
 
 
 def get_enum_items(thumbnails, pcoll):
+    '''Return the enum items for the thumbnail previews.'''
     for thumbnail in thumbnails:
         image = pcoll.get(thumbnail.filepath)
         if not image:
@@ -149,6 +152,7 @@ def get_enum_items(thumbnails, pcoll):
 
 
 def get_pose_thumbnails(self, context):
+    '''Get the pose thumbnails and add them to the preview collection.'''
     poselib = context.object.pose_library
     if (context is None or
         not poselib.pose_markers or
@@ -185,6 +189,7 @@ def update_pose(self, context):
 
 
 def pose_thumbnails_draw(self, context):
+    '''Draw the thumbnail enum in the Pose Library panel.'''
     if not context.object.pose_library.pose_markers:
         return
     user_prefs = context.user_preferences
@@ -250,7 +255,7 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.prop(self, "use_relative_path")
+        col.prop(self, 'use_relative_path')
 
 
 class PoselibThumbnails(bpy.types.PropertyGroup):
@@ -279,6 +284,7 @@ class PoselibThumbnails(bpy.types.PropertyGroup):
 
 
 class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
+    '''A collection property for all thumbnail related properties.'''
     info = bpy.props.CollectionProperty(
         type=PoselibThumbnails)
     thumbnails = bpy.props.EnumProperty(
@@ -288,6 +294,7 @@ class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
 
 
 def register():
+    '''Register all pose thumbnail related things.'''
     bpy.types.Action.pose_thumbnails = bpy.props.PointerProperty(
         type=PoselibThumbnailsInfo)
 
@@ -299,6 +306,7 @@ def register():
 
 
 def unregister():
+    '''Unregister all pose thumbnails related things.'''
     bpy.types.DATA_PT_pose_library.remove(pose_thumbnails_draw)
     for pcoll in preview_collections.values():
         bpy.utils.previews.remove(pcoll)
