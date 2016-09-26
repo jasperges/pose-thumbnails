@@ -1,6 +1,5 @@
 '''This module does the actual work for the pose thumbnails addon.'''
 # TODO:
-#   - Clean match by index
 #   - Make match by frame
 #   - Add 'Remove thumbnail operator'
 #   - Refresh/Sanitize button to refresh everything thoroughly
@@ -12,7 +11,6 @@
 import os
 import logging
 import re
-from collections import namedtuple
 import difflib
 if 'bpy' in locals():
     import importlib
@@ -357,7 +355,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         )
     map_method_items = (
             ('NAME', 'Name', 'Map the files to the names of the poses.'),
-            ('INDEX', 'Index', 'Map the files to the order of the poses (numbering the image files makes sense!)'),
+            ('INDEX', 'Index', 'Map the files to the order of the poses (file names without numbers will be skipped).'),
             ('FRAME', 'Frame', 'Map the files to the order of the frame number of the poses (advanced and probably not so useful option).'),
             )
     map_method = bpy.props.EnumProperty(
@@ -370,7 +368,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         description='Overwrite existing thumbnails of the poses.',
         default=True,
         )
-    cutoff = bpy.props.FloatProperty(
+    match_fuzzyness = bpy.props.FloatProperty(
         name='Fuzzyness',
         description='Fuzzyness of the matching (0 = exact match, 1 = everything).',
         min=0.0,
@@ -397,6 +395,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         '''Get all image files from a directory.'''
         directory = self.directory
         files = [f.name for f in self.files]
+        image_paths = []
         if files and not files[0]:
             image_files = os.listdir(directory)
         else:
@@ -406,9 +405,12 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             if ext and ext in self.filename_ext:
                 image_path = os.path.join(directory, image_file)
                 if self.use_relative_path:
-                    yield bpy.path.relpath(image_path)
+                    # yield bpy.path.relpath(image_path)
+                    image_paths.append(bpy.path.relpath(image_path))
                 else:
-                    yield image_path
+                    # yield image_path
+                    image_paths.append(image_path)
+        return image_paths
 
     def create_thumbnail(self, index, pose, image):
         '''Create or update the thumbnail for a pose.'''
@@ -424,57 +426,49 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         thumbnail.frame = pose.frame
         thumbnail.filepath = image
 
-    def get_numbered_images(self):
-        '''Return a named tuple with (index, image) for self.image_files.
+    def get_image_by_number(self, number):
+        '''Return a the image file if it contains the number.
 
-        Check if the filename starts with a number, if so, that is the index,
-        if not, skip the image.
+        Check if the filename contains the number. It matches the first number
+        found in the filename (starting from the left).
         '''
-        # TODO: remove double indices. Can be caused by filenames like:
-        #       009-pose.jpg, 00009-pose.jpg, etc.
-        IndexImage = namedtuple('IndexImage', ['number', 'image'])
-        numbered_images = []
         for image in self.image_files:
             basename = os.path.basename(image)
-            match = re.match(r'^([0-9]+).*', basename)
+            match = re.match(r'^.*?([0-9]+)', basename)
             if match:
-                number = int(match.groups()[0])
-                numbered_image = IndexImage(number, image)
-                numbered_images.append(numbered_image)
-        return numbered_images
+                image_number = int(match.groups()[0])
+                if number == image_number:
+                    return image
 
     def match_thumbnails_by_name(self):
         '''Assign the thumbnail by trying to match the pose name with a file name.'''
         poselib = self.poselib
         thumbnails_info = poselib.pose_thumbnails.info
         image_files = self.image_files
-        match_dict = {os.path.splitext(os.path.basename(f))[0]: f for f in image_files}
+        match_map = {os.path.splitext(os.path.basename(f))[0]: f for f in image_files}
         for i, pose in enumerate(poselib.pose_markers):
             match = difflib.get_close_matches(
                 clean_pose_name(pose.name),
-                match_dict.keys(),
-                n=3,
-                cutoff=1.0 - self.cutoff,
+                match_map.keys(),
+                n=1,
+                cutoff=1.0 - self.match_fuzzyness,
                 )
             if match:
-                thumbnail_image = match_dict[match[0]]
+                thumbnail_image = match_map[match[0]]
                 self.create_thumbnail(i, pose, thumbnail_image)
 
     def match_thumbnails_by_index(self):
         '''Map the thumbnail images to the index of the poses.'''
         poselib = self.poselib
         thumbnails_info = self.poselib.pose_thumbnails.info
-        image_files = self.image_files
-        start_number = self.start_number
         if self.match_by_number:
-            numbered_images = self.get_numbered_images()
-            if not numbered_images:
-                return
+            start_number = self.start_number
             for i, pose in enumerate(poselib.pose_markers):
-                if i + start_number == numbered_images[0].number:
-                    image = numbered_images.pop(0).image
+                image = self.get_image_by_number(i + start_number)
+                if image:
                     self.create_thumbnail(i, pose, image)
         else:
+            image_files = self.image_files
             for i, (pose, image) in enumerate(zip(poselib.pose_markers, image_files)):
                 self.create_thumbnail(i, pose, image)
 
@@ -517,7 +511,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         row.prop(self, 'map_method', expand=True)
         box.prop(self, 'overwrite_existing')
         if self.map_method == 'NAME':
-            box.prop(self, 'cutoff')
+            box.prop(self, 'match_fuzzyness')
         if self.map_method == 'INDEX':
             box.prop(self, 'match_by_number')
             if self.match_by_number:
@@ -581,7 +575,6 @@ def register():
     bpy.types.Action.pose_thumbnails = bpy.props.PointerProperty(
         type=PoselibThumbnailsInfo)
     # bpy.types.Action. = bpy.props.PointerProperty(type=jasperge_tools.JaspergeToolsSettings)
-
     bpy.types.DATA_PT_pose_library.prepend(pose_thumbnails_draw)
     # bpy.types.DATA_PT_pose_library.append(pose_thumbnails_options_draw)
 
