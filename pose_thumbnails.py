@@ -1,6 +1,5 @@
 '''This module does the actual work for the pose thumbnails addon.'''
 # TODO:
-#   - Make match by frame
 #   - Add 'Remove thumbnail operator'
 #   - Refresh/Sanitize button to refresh everything thoroughly
 #   - Update label when renaming a pose
@@ -437,6 +436,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             match = re.match(r'^.*?([0-9]+)', basename)
             if match:
                 image_number = int(match.groups()[0])
+                print(image_number)
                 if number == image_number:
                     return image
 
@@ -460,7 +460,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
     def match_thumbnails_by_index(self):
         '''Map the thumbnail images to the index of the poses.'''
         poselib = self.poselib
-        thumbnails_info = self.poselib.pose_thumbnails.info
+        thumbnails_info = poselib.pose_thumbnails.info
         if self.match_by_number:
             start_number = self.start_number
             for i, pose in enumerate(poselib.pose_markers):
@@ -473,7 +473,21 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
                 self.create_thumbnail(i, pose, image)
 
     def match_thumbnails_by_frame(self):
-        return
+        '''Map the thumbnail images to the frame of the poses.'''
+        poselib = self.poselib
+        thumbnails_info = poselib.pose_thumbnails.info
+        if self.match_by_number:
+            for i, pose in enumerate(poselib.pose_markers):
+                print(pose.frame)
+                image = self.get_image_by_number(pose.frame)
+                print(image)
+                if image:
+                    self.create_thumbnail(i, pose, image)
+        else:
+            frame_sorted = sorted(poselib.pose_markers, key=lambda p: p.frame)
+            image_files = self.image_files
+            for i, (pose, image) in enumerate(zip(frame_sorted, image_files)):
+                self.create_thumbnail(i, pose, image)
 
     def match_thumbnails(self):
         '''Try to match the image files to the poses.'''
@@ -516,6 +530,8 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             box.prop(self, 'match_by_number')
             if self.match_by_number:
                 box.prop(self, 'start_number')
+        if self.map_method == 'FRAME':
+            box.prop(self, 'match_by_number')
         col.separator()
         col.prop(self, 'use_relative_path')
 
