@@ -1,6 +1,5 @@
 '''This module does the actual work for the pose thumbnails addon.'''
 # TODO:
-#   - Add 'Remove thumbnail operator'
 #   - Refresh/Sanitize button to refresh everything thoroughly
 #   - Update label when renaming a pose
 #   - Update all pose thumbnail suffixes when changing this in the preferences (update function?)
@@ -257,6 +256,7 @@ def pose_thumbnails_draw(self, context):
         else:
             text = 'Add Thumbnail'
         sub_col.operator(AddPoseThumbnail.bl_idname, text=text)
+        sub_col.operator(RemovePoseThumbnail.bl_idname)
         sub_col.operator(AddPoseThumbnailsFromDir.bl_idname)
 
 
@@ -290,10 +290,10 @@ def pose_thumbnails_options_draw(self, context):
 
 
 class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
-    '''Add a thumbnail to a pose from a pose library.'''
+    '''Add a thumbnail to a pose.'''
     bl_idname = 'poselib.add_thumbnail'
     bl_label = 'Add thumbnail'
-    # bl_options = {'PRESET', 'UNDO'}
+    bl_options = {'PRESET', 'UNDO'}
 
     filename_ext = '.jpg;.jpeg;.png'
     filter_glob = bpy.props.StringProperty(
@@ -436,7 +436,6 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             match = re.match(r'^.*?([0-9]+)', basename)
             if match:
                 image_number = int(match.groups()[0])
-                print(image_number)
                 if number == image_number:
                     return image
 
@@ -478,9 +477,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         thumbnails_info = poselib.pose_thumbnails.info
         if self.match_by_number:
             for i, pose in enumerate(poselib.pose_markers):
-                print(pose.frame)
                 image = self.get_image_by_number(pose.frame)
-                print(image)
                 if image:
                     self.create_thumbnail(i, pose, image)
         else:
@@ -534,6 +531,23 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             box.prop(self, 'match_by_number')
         col.separator()
         col.prop(self, 'use_relative_path')
+
+
+class RemovePoseThumbnail(bpy.types.Operator):
+    '''Remove a thumbnail from a pose.'''
+    bl_idname = 'poselib.remove_thumbnail'
+    bl_label = 'Remove thumbnail'
+    bl_options = {'PRESET', 'UNDO'}
+
+    def execute(self, context):
+        poselib = context.object.pose_library
+        pose = poselib.pose_markers.active
+        pose.name = clean_pose_name(pose.name)
+        for i, thumbnail in enumerate(poselib.pose_thumbnails.info):
+            if pose.frame == thumbnail.frame:
+                poselib.pose_thumbnails.info.remove(i)
+                break
+        return {'FINISHED'}
 
 
 class PoselibThumbnails(bpy.types.PropertyGroup):
