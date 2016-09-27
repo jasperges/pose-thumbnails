@@ -1,10 +1,8 @@
 '''This module does the actual work for the pose thumbnails addon.'''
 # TODO:
-#   - Refresh/Sanitize button to refresh everything thoroughly
 #   - Update label when renaming a pose
 #   - Update all pose thumbnail suffixes when changing this in the preferences (update function?)
 #   - Encoding issue with thumbnail labels? (Aaaaaah, shows weird) - Seems a bug in blender with 7 or more a's it getting weird. File bug report?
-#   - Find better naming for add thumbnail(s)/add from dir. Add/update from dir? Add/update thumbnailS?
 
 import os
 import logging
@@ -253,18 +251,21 @@ def pose_thumbnails_draw(self, context):
             return
         thumbnail = get_thumbnail_from_pose(poselib.pose_markers.active)
         if thumbnail and thumbnail.filepath != get_no_thumbnail_path():
-            text = 'Update Thumbnail'
+            text = 'Replace'
         else:
-            text = 'Add Thumbnail'
-        sub_col.operator(AddPoseThumbnail.bl_idname, text=text)
-        sub_col.operator(AddPoseThumbnailsFromDir.bl_idname)
-        sub_col.separator()
-        sub_col.operator(RemovePoseThumbnail.bl_idname)
-        sub_col.operator(RemoveAllThumbnails.bl_idname)
+            text = 'Add'
+        row = sub_col.row(align=True)
+        row.operator(AddPoseThumbnail.bl_idname, text=text)
+        row.operator(AddPoseThumbnailsFromDir.bl_idname, text='Batch Add')
+        # sub_col.separator()
+        row = sub_col.row(align=True)
+        row.operator(RemovePoseThumbnail.bl_idname, text='Remove')
+        row.operator(RemoveAllThumbnails.bl_idname, text='Remove All')
         sub_col.separator()
         sub_col.operator(
             RefreshThumbnails.bl_idname,
             icon='FILE_REFRESH',
+            text='Refresh',
             )
 
 
@@ -562,7 +563,7 @@ class RemoveAllThumbnails(bpy.types.Operator):
 
 
 class RefreshThumbnails(bpy.types.Operator):
-    '''Refreshes/reloads the thumbnails.'''
+    '''Reloads and cleans the thumbnails and poses.'''
     bl_idname = 'poselib.refresh_thumbnails'
     bl_label = 'Refresh Thumbnails'
     bl_options = {'PRESET', 'UNDO'}
