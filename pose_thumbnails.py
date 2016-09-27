@@ -1,13 +1,14 @@
 '''This module does the actual work for the pose thumbnails addon.'''
 # TODO:
-#   - Update label when renaming a pose
-#   - Update all pose thumbnail suffixes when changing this in the preferences (update function?)
+#   - Remove thumbnail.index, it's quite useless.
+#   - Rename pose_thumbnail properties.
 #   - Encoding issue with thumbnail labels? (Aaaaaah, shows weird) - Seems a bug in blender with 7 or more a's it getting weird. File bug report?
 
 import os
 import logging
 import re
 import difflib
+import copy
 if 'bpy' in locals():
     import importlib
     if 'prefs' in locals():
@@ -85,9 +86,9 @@ def get_pose_from_thumbnail(thumbnail):
     if thumbnail is None:
         return
     poselib = thumbnail.id_data
-    for pose in poselib.pose_markers:
+    for i, pose in enumerate(poselib.pose_markers):
         if pose.frame == thumbnail.frame:
-            return pose
+            return (i, pose)
 
 
 def get_pose_index(pose):
@@ -169,9 +170,11 @@ def get_enum_items(thumbnails, pcoll):
                     image_path,
                     'IMAGE',
                     )
+        _, pose = get_pose_from_thumbnail(thumbnail)
+        thumbnail_name = clean_pose_name(pose.name)
         yield ((
             str(thumbnail.frame),
-            thumbnail.name,
+            thumbnail_name,
             '',
             image.icon_id,
             thumbnail.index
@@ -604,12 +607,22 @@ class RefreshThumbnails(bpy.types.Operator):
         for pose in self.poselib.pose_markers:
             if not get_thumbnail_from_pose(pose):
                 pose.name = clean_pose_name(pose.name)
+            else:
+                pose.name = suffix_pose_name(pose.name)
+
+    def update_thumbnails(self):
+        '''Update the info of the thumbnails.'''
+        for thumbnail in self.poselib.pose_thumbnails.info:
+            index, pose = get_pose_from_thumbnail(thumbnail)
+            thumbnail.name = clean_pose_name(pose.name)
+            thumbnail.index = index
 
     def execute(self, context):
         self.poselib = context.object.pose_library
         self.clean_pose_names()
         self.remove_unused_thumbnails()
         self.remove_double_thumbnails()
+        self.update_thumbnails()
         pcoll = preview_collections['pose_library']
         pcoll.clear()
         return {'FINISHED'}
