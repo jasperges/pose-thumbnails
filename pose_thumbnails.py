@@ -235,18 +235,19 @@ def pose_thumbnails_draw(self, context):
         show_labels=show_labels,
         )
     col.prop(thumbnail_ui_settings, 'show_labels', toggle=True)
+    col.separator()
     box = col.box()
-    if thumbnail_ui_settings.advanced_settings:
+    if thumbnail_ui_settings.creation_group:
         expand_icon = 'TRIA_DOWN'
     else:
         expand_icon = 'TRIA_RIGHT'
     box.prop(
         thumbnail_ui_settings,
-        'advanced_settings',
+        'creation_group',
         icon=expand_icon,
         toggle=True,
         )
-    if thumbnail_ui_settings.advanced_settings:
+    if thumbnail_ui_settings.creation_group:
         sub_col = box.column(align=True)
         if not poselib.pose_markers.active:
             return
@@ -256,8 +257,15 @@ def pose_thumbnails_draw(self, context):
         else:
             text = 'Add Thumbnail'
         sub_col.operator(AddPoseThumbnail.bl_idname, text=text)
-        sub_col.operator(RemovePoseThumbnail.bl_idname)
         sub_col.operator(AddPoseThumbnailsFromDir.bl_idname)
+        sub_col.separator()
+        sub_col.operator(RemovePoseThumbnail.bl_idname)
+        sub_col.operator(RemoveAllThumbnails.bl_idname)
+        sub_col.separator()
+        sub_col.operator(
+            RefreshThumbnails.bl_idname,
+            icon='FILE_REFRESH',
+            )
 
 
 def pose_thumbnails_options_draw(self, context):
@@ -272,17 +280,17 @@ def pose_thumbnails_options_draw(self, context):
     # box = layout.box()
     # col = box.column(align=True)
     thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
-    if thumbnail_ui_settings.advanced_settings:
+    if thumbnail_ui_settings.creation_group:
         expand_icon = 'TRIA_DOWN'
     else:
         expand_icon = 'TRIA_RIGHT'
     col.prop(
         thumbnail_ui_settings,
-        'advanced_settings',
+        'creation_group',
         icon=expand_icon,
         toggle=True,
         )
-    if thumbnail_ui_settings.advanced_settings:
+    if thumbnail_ui_settings.creation_group:
         col.label(text='Advanced Settings')
         # col.label(text="General:")
         # row = col.row(align=True)
@@ -335,7 +343,7 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
 class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
     '''Add thumbnails from a directory to poses from a pose library.'''
     bl_idname = 'poselib.add_thumbnails_from_dir'
-    bl_label = 'Add thumbnails from directory'
+    bl_label = 'Add Thumbnails from Directory'
     bl_options = {'PRESET', 'UNDO'}
 
     directory = bpy.props.StringProperty(
@@ -500,17 +508,6 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         self.poselib = context.object.pose_library
         self.image_files = self.get_images_from_dir()
         self.match_thumbnails()
-
-        # active_posemarker = poselib.pose_markers.active
-        # active_posemarker_index = poselib.pose_markers.active_index
-        # name = clean_pose_name(active_posemarker.name)
-        # active_posemarker.name = suffix_pose_name(active_posemarker.name)
-        # thumbnail = (get_thumbnail_from_pose(active_posemarker) or
-        #              poselib.pose_thumbnails.info.add())
-        # thumbnail.name = name
-        # thumbnail.index = active_posemarker_index
-        # thumbnail.frame = active_posemarker.frame
-        # thumbnail.filepath = filepath
         return {'FINISHED'}
 
     def draw(self, context):
@@ -536,7 +533,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
 class RemovePoseThumbnail(bpy.types.Operator):
     '''Remove a thumbnail from a pose.'''
     bl_idname = 'poselib.remove_thumbnail'
-    bl_label = 'Remove thumbnail'
+    bl_label = 'Remove Thumbnail'
     bl_options = {'PRESET', 'UNDO'}
 
     def execute(self, context):
@@ -547,6 +544,73 @@ class RemovePoseThumbnail(bpy.types.Operator):
             if pose.frame == thumbnail.frame:
                 poselib.pose_thumbnails.info.remove(i)
                 break
+        return {'FINISHED'}
+
+
+class RemoveAllThumbnails(bpy.types.Operator):
+    '''Remove all thumbnails.'''
+    bl_idname = 'poselib.remove_all_thumbnails'
+    bl_label = 'Remove All Thumbnails'
+    bl_options = {'PRESET', 'UNDO'}
+
+    def execute(self, context):
+        poselib = context.object.pose_library
+        poselib.pose_thumbnails.info.clear()
+        for pose in poselib.pose_markers:
+            pose.name = clean_pose_name(pose.name)
+        return {'FINISHED'}
+
+
+class RefreshThumbnails(bpy.types.Operator):
+    '''Refreshes/reloads the thumbnails.'''
+    bl_idname = 'poselib.refresh_thumbnails'
+    bl_label = 'Refresh Thumbnails'
+    bl_options = {'PRESET', 'UNDO'}
+
+    def remove_thumbnail(self, thumbnail):
+        '''Remove the thumbnail from the poselib thumbnail info.'''
+        thumbnail_info = self.poselib.pose_thumbnails.info
+        for i, existing_thumbnail in enumerate(thumbnail_info):
+            if thumbnail == existing_thumbnail:
+                thumbnail_info.remove(i)
+
+    def remove_unused_thumbnails(self):
+        '''Remove unused thumbnails.'''
+
+        def get_unused_thumbnails():
+            for thumbnail in self.poselib.pose_thumbnails.info:
+                if not get_pose_from_thumbnail(thumbnail):
+                    yield thumbnail
+
+        unused_thumbnails = get_unused_thumbnails()
+        for thumbnail in unused_thumbnails:
+            self.remove_thumbnail(thumbnail)
+
+    def remove_double_thumbnails(self):
+        '''Remove extraneous thumbnails from a pose.'''
+        thumbnail_map = {}
+        for thumbnail in self.poselib.pose_thumbnails.info:
+            if str(thumbnail.frame) not in thumbnail_map:
+                thumbnail_map[str(thumbnail.frame)] = [thumbnail]
+            else:
+                thumbnail_map[str(thumbnail.frame)].append(thumbnail)
+        for frame, thumbnail_list in thumbnail_map.items():
+            for thumbnail in thumbnail_list[:-1]:
+                self.remove_thumbnail(thumbnail)
+
+    def clean_pose_names(self):
+        '''Remove suffixes from poses without a thumbnail.'''
+        for pose in self.poselib.pose_markers:
+            if not get_thumbnail_from_pose(pose):
+                pose.name = clean_pose_name(pose.name)
+
+    def execute(self, context):
+        self.poselib = context.object.pose_library
+        self.clean_pose_names()
+        self.remove_unused_thumbnails()
+        self.remove_double_thumbnails()
+        pcoll = preview_collections['pose_library']
+        pcoll.clear()
         return {'FINISHED'}
 
 
@@ -577,12 +641,12 @@ class PoselibThumbnails(bpy.types.PropertyGroup):
 
 class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
     '''A property to hold the option info for the thumbnail UI.'''
-    advanced_settings = bpy.props.BoolProperty(
-        name='Thumbnail creation',
+    creation_group = bpy.props.BoolProperty(
+        name='Thumbnail Creation',
         default=False,
         )
     show_labels = bpy.props.BoolProperty(
-        name='Show labels',
+        name='Show Labels',
         default=True,
         )
 
