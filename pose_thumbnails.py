@@ -372,11 +372,11 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         options={'HIDDEN'},
         )
     map_method_items = (
-            ('NAME', 'Name', 'Map the files to the names of the poses.'),
-            ('INDEX', 'Index', 'Map the files to the order of the poses (file names without numbers will be skipped).'),
-            ('FRAME', 'Frame', 'Map the files to the order of the frame number of the poses (advanced and probably not so useful option).'),
+            ('NAME', 'Name', 'Match the file names with the pose names.'),
+            ('INDEX', 'Index', 'Map the files to the order of the poses (the files are sorted by name, so numbering them makes sense).'),
+            ('FRAME', 'Frame', 'Map the files to the order of the frame number of the poses.'),
             )
-    map_method = bpy.props.EnumProperty(
+    mapping_method = bpy.props.EnumProperty(
         name='Match by',
         description='Match the thumbnail images to the poses by using this method',
         items=map_method_items,
@@ -395,12 +395,12 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         )
     match_by_number = bpy.props.BoolProperty(
         name='Match by number',
-        description='If the filenames start with a number, match the number to the pose index.',
+        description='If the filenames start with a number, match the number to the pose index/frame.',
         default=False,
         )
     start_number = bpy.props.IntProperty(
         name='Start number',
-        description='The image number to match to the first pose.',
+        description='The image number to map to the first pose.',
         default=1,
         )
     use_relative_path = bpy.props.BoolProperty(
@@ -507,10 +507,10 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
 
     def match_thumbnails(self):
         '''Try to match the image files to the poses.'''
-        map_method = self.map_method
-        if map_method == 'NAME':
+        mapping_method = self.mapping_method
+        if mapping_method == 'NAME':
             self.match_thumbnails_by_name()
-        elif map_method == 'INDEX':
+        elif mapping_method == 'INDEX':
             self.match_thumbnails_by_index()
         else:
             self.match_thumbnails_by_frame()
@@ -525,17 +525,17 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         layout = self.layout
         col = layout.column()
         box = col.box()
-        box.label(text='Map method')
+        box.label(text='Mapping Method')
         row = box.row()
-        row.prop(self, 'map_method', expand=True)
+        row.prop(self, 'mapping_method', expand=True)
         box.prop(self, 'overwrite_existing')
-        if self.map_method == 'NAME':
+        if self.mapping_method == 'NAME':
             box.prop(self, 'match_fuzzyness')
-        if self.map_method == 'INDEX':
+        if self.mapping_method == 'INDEX':
             box.prop(self, 'match_by_number')
             if self.match_by_number:
                 box.prop(self, 'start_number')
-        if self.map_method == 'FRAME':
+        if self.mapping_method == 'FRAME':
             box.prop(self, 'match_by_number')
         col.separator()
         col.prop(self, 'use_relative_path')
