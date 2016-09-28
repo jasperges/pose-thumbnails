@@ -1,8 +1,4 @@
 '''This module does the actual work for the pose thumbnails addon.'''
-# TODO:
-#   - Remove thumbnail.index, it's quite useless.
-#   - Rename pose_thumbnail properties.
-#   - Encoding issue with thumbnail labels? (Aaaaaah, shows weird) - Seems a bug in blender with 7 or more a's it getting weird. File bug report?
 
 import os
 import logging
@@ -29,9 +25,9 @@ def clean_pose_name(pose_name):
     '''Return the clean pose name, that is without thumbnail suffix.'''
     user_prefs = bpy.context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
-    pose_thumbnail_suffix = addon_prefs.pose_thumbnail_suffix
-    if pose_name.endswith(pose_thumbnail_suffix):
-        return pose_name[:-len(pose_thumbnail_suffix)]
+    pose_suffix = addon_prefs.pose_suffix
+    if pose_name.endswith(pose_suffix):
+        return pose_name[:-len(pose_suffix)]
     else:
         return pose_name
 
@@ -40,11 +36,11 @@ def suffix_pose_name(pose_name):
     '''Return the pose name with the thumbnail suffix.'''
     user_prefs = bpy.context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
-    pose_thumbnail_suffix = addon_prefs.pose_thumbnail_suffix
-    if pose_name.endswith(pose_thumbnail_suffix):
+    pose_suffix = addon_prefs.pose_suffix
+    if pose_name.endswith(pose_suffix):
         return pose_name
     else:
-        return ''.join((pose_name, pose_thumbnail_suffix))
+        return ''.join((pose_name, pose_suffix))
 
 
 def get_images_from_dir(directory, sort=True):
@@ -69,7 +65,7 @@ def get_thumbnail_from_pose(pose):
     if pose is None:
         return
     poselib = pose.id_data
-    for thumbnail in poselib.pose_thumbnails.info:
+    for thumbnail in poselib.pose_thumbnails.collection:
         if thumbnail.frame == pose.frame:
             return thumbnail
 
@@ -129,7 +125,7 @@ def get_no_thumbnail_image(pcoll):
 def add_no_thumbnail_to_pose(pose):
     '''Add info with 'no thumbnail' image to the pose.'''
     poselib = pose.id_data
-    no_thumbnail = poselib.pose_thumbnails.info.add()
+    no_thumbnail = poselib.pose_thumbnails.collection.add()
     no_thumbnail.name = pose.name
     no_thumbnail.index = get_pose_index(pose)
     no_thumbnail.frame = pose.frame
@@ -186,7 +182,7 @@ def get_pose_thumbnails(self, context):
     poselib = context.object.pose_library
     if (context is None or
         not poselib.pose_markers or
-        not poselib.pose_thumbnails.info):
+        not poselib.pose_thumbnails.collection):
             return []
     pcoll = preview_collections['pose_library']
     sorted_thumbnails = sort_thumbnails(poselib)
@@ -209,7 +205,7 @@ def update_pose(self, context):
     Returns:
         None
     '''
-    pose_frame = int(self.thumbnails)
+    pose_frame = int(self.previews_ui)
     poselib = self.id_data
     for i, pose_marker in enumerate(poselib.pose_markers):
         if pose_marker.frame == pose_frame:
@@ -232,7 +228,7 @@ def pose_thumbnails_draw(self, context):
     col = layout.column(align=True)
     col.template_icon_view(
         poselib.pose_thumbnails,
-        'thumbnails',
+        'previews_ui',
         show_labels=show_labels,
         )
     col.prop(thumbnail_ui_settings, 'show_labels', toggle=True)
@@ -331,7 +327,7 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
         name = clean_pose_name(pose_name)
         active_posemarker.name = suffix_pose_name(pose_name)
         thumbnail = (get_thumbnail_from_pose(active_posemarker) or
-                     poselib.pose_thumbnails.info.add())
+                     poselib.pose_thumbnails.collection.add())
         thumbnail.name = name
         thumbnail.index = active_posemarker_index
         thumbnail.frame = active_posemarker.frame
@@ -431,7 +427,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         name = clean_pose_name(pose.name)
         pose.name = suffix_pose_name(pose.name)
         thumbnail = (get_thumbnail_from_pose(pose) or
-                     poselib.pose_thumbnails.info.add())
+                     poselib.pose_thumbnails.collection.add())
         thumbnail.name = name
         thumbnail.index = index
         thumbnail.frame = pose.frame
@@ -454,7 +450,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
     def match_thumbnails_by_name(self):
         '''Assign the thumbnail by trying to match the pose name with a file name.'''
         poselib = self.poselib
-        thumbnails_info = poselib.pose_thumbnails.info
+        thumbnails_collection = poselib.pose_thumbnails.collection
         image_files = self.image_files
         match_map = {os.path.splitext(os.path.basename(f))[0]: f for f in image_files}
         for i, pose in enumerate(poselib.pose_markers):
@@ -471,7 +467,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
     def match_thumbnails_by_index(self):
         '''Map the thumbnail images to the index of the poses.'''
         poselib = self.poselib
-        thumbnails_info = poselib.pose_thumbnails.info
+        thumbnails_collection = poselib.pose_thumbnails.collection
         if self.match_by_number:
             start_number = self.start_number
             for i, pose in enumerate(poselib.pose_markers):
@@ -486,7 +482,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
     def match_thumbnails_by_frame(self):
         '''Map the thumbnail images to the frame of the poses.'''
         poselib = self.poselib
-        thumbnails_info = poselib.pose_thumbnails.info
+        thumbnails_collection = poselib.pose_thumbnails.collection
         if self.match_by_number:
             for i, pose in enumerate(poselib.pose_markers):
                 image = self.get_image_by_number(pose.frame)
@@ -544,9 +540,9 @@ class RemovePoseThumbnail(bpy.types.Operator):
         poselib = context.object.pose_library
         pose = poselib.pose_markers.active
         pose.name = clean_pose_name(pose.name)
-        for i, thumbnail in enumerate(poselib.pose_thumbnails.info):
+        for i, thumbnail in enumerate(poselib.pose_thumbnails.collection):
             if pose.frame == thumbnail.frame:
-                poselib.pose_thumbnails.info.remove(i)
+                poselib.pose_thumbnails.collection.remove(i)
                 break
         return {'FINISHED'}
 
@@ -559,7 +555,7 @@ class RemoveAllThumbnails(bpy.types.Operator):
 
     def execute(self, context):
         poselib = context.object.pose_library
-        poselib.pose_thumbnails.info.clear()
+        poselib.pose_thumbnails.collection.clear()
         for pose in poselib.pose_markers:
             pose.name = clean_pose_name(pose.name)
         return {'FINISHED'}
@@ -573,16 +569,16 @@ class RefreshThumbnails(bpy.types.Operator):
 
     def remove_thumbnail(self, thumbnail):
         '''Remove the thumbnail from the poselib thumbnail info.'''
-        thumbnail_info = self.poselib.pose_thumbnails.info
-        for i, existing_thumbnail in enumerate(thumbnail_info):
+        thumbnail_collection = self.poselib.pose_thumbnails.collection
+        for i, existing_thumbnail in enumerate(thumbnail_collection):
             if thumbnail == existing_thumbnail:
-                thumbnail_info.remove(i)
+                thumbnail_collection.remove(i)
 
     def remove_unused_thumbnails(self):
         '''Remove unused thumbnails.'''
 
         def get_unused_thumbnails():
-            for thumbnail in self.poselib.pose_thumbnails.info:
+            for thumbnail in self.poselib.pose_thumbnails.collection:
                 if not get_pose_from_thumbnail(thumbnail):
                     yield thumbnail
 
@@ -593,7 +589,7 @@ class RefreshThumbnails(bpy.types.Operator):
     def remove_double_thumbnails(self):
         '''Remove extraneous thumbnails from a pose.'''
         thumbnail_map = {}
-        for thumbnail in self.poselib.pose_thumbnails.info:
+        for thumbnail in self.poselib.pose_thumbnails.collection:
             if str(thumbnail.frame) not in thumbnail_map:
                 thumbnail_map[str(thumbnail.frame)] = [thumbnail]
             else:
@@ -612,7 +608,7 @@ class RefreshThumbnails(bpy.types.Operator):
 
     def update_thumbnails(self):
         '''Update the info of the thumbnails.'''
-        for thumbnail in self.poselib.pose_thumbnails.info:
+        for thumbnail in self.poselib.pose_thumbnails.collection:
             index, pose = get_pose_from_thumbnail(thumbnail)
             thumbnail.name = clean_pose_name(pose.name)
             thumbnail.index = index
@@ -628,7 +624,7 @@ class RefreshThumbnails(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class PoselibThumbnails(bpy.types.PropertyGroup):
+class PoselibThumbnail(bpy.types.PropertyGroup):
     '''A property to hold the thumbnail info for a pose.'''
     name = bpy.props.StringProperty(
         name='Pose name',
@@ -667,9 +663,9 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
 
 class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
     '''A collection property for all thumbnail related properties.'''
-    info = bpy.props.CollectionProperty(
-        type=PoselibThumbnails)
-    thumbnails = bpy.props.EnumProperty(
+    collection = bpy.props.CollectionProperty(
+        type=PoselibThumbnail)
+    previews_ui = bpy.props.EnumProperty(
         items=get_pose_thumbnails,
         update=update_pose,
         )
@@ -682,7 +678,6 @@ def register():
     '''Register all pose thumbnail related things.'''
     bpy.types.Action.pose_thumbnails = bpy.props.PointerProperty(
         type=PoselibThumbnailsInfo)
-    # bpy.types.Action. = bpy.props.PointerProperty(type=jasperge_tools.JaspergeToolsSettings)
     bpy.types.DATA_PT_pose_library.prepend(pose_thumbnails_draw)
     # bpy.types.DATA_PT_pose_library.append(pose_thumbnails_options_draw)
 
