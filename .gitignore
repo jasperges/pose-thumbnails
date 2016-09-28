@@ -58,3 +58,6 @@ target/
 
 # docs (at least for now)
 docs
+
+# Release dir
+releases/
