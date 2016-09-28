@@ -21,11 +21,16 @@ logger = logging.getLogger(__name__)
 preview_collections = {}
 
 
-def clean_pose_name(pose_name):
-    '''Return the clean pose name, that is without thumbnail suffix.'''
+def get_pose_suffix_from_prefs():
+    '''Get the pose suffix from the addon preferences.'''
     user_prefs = bpy.context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
-    pose_suffix = addon_prefs.pose_suffix
+    return addon_prefs.pose_suffix
+
+
+def clean_pose_name(pose_name):
+    '''Return the clean pose name, that is without thumbnail suffix.'''
+    pose_suffix = get_pose_suffix_from_prefs()
     if pose_name.endswith(pose_suffix):
         return pose_name[:-len(pose_suffix)]
     else:
@@ -37,10 +42,10 @@ def suffix_pose_name(pose_name):
     user_prefs = bpy.context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
     pose_suffix = addon_prefs.pose_suffix
-    if pose_name.endswith(pose_suffix):
+    if pose_name.endswith(pose_suffix) or not pose_suffix.strip():
         return pose_name
     else:
-        return ''.join((pose_name, pose_suffix))
+        return ' '.join((pose_name, pose_suffix))
 
 
 def get_images_from_dir(directory, sort=True):
@@ -677,6 +682,12 @@ class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
         )
     ui_settings = bpy.props.PointerProperty(
         type=PoselibThumbnailsOptions,
+        )
+    suffix = bpy.props.StringProperty(
+        name='Pose Suffix',
+        description=('Add this suffix to the name of a pose when it has a'
+                     ' thumbnail. Leave empty to add nothing.'),
+        default=get_pose_suffix_from_prefs(),
         )
 
 

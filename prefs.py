@@ -1,6 +1,24 @@
 import bpy
 
 
+def change_suffix(pose, old_suffix, new_suffix):
+    '''Change the old suffix to the new one.'''
+    clean_name = pose.name[:-len(old_suffix)]
+    pose.name = ' '.join((clean_name, new_suffix))
+
+
+def update_pose_suffixes(self, context):
+    '''Update the pose suffixes when the user pref is changed.'''
+    for poselib in bpy.data.actions:
+        if poselib.pose_markers:
+            if poselib.pose_thumbnails.suffix != self.pose_suffix:
+                for pose in poselib.pose_markers:
+                    old_suffix = poselib.pose_thumbnails.suffix
+                    new_suffix = self.pose_suffix
+                    change_suffix(pose, old_suffix, new_suffix)
+                poselib.pose_thumbnails.suffix = self.pose_suffix
+
+
 class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
     add_3dview_prop_panel = bpy.props.BoolProperty(
@@ -12,7 +30,8 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
         name='Pose Suffix',
         description=('Add this suffix to the name of a pose when it has a'
                      ' thumbnail. Leave empty to add nothing.'),
-        default=' [T]',
+        default='[T]',
+        update=update_pose_suffixes,
         )
 
     def draw(self, context):
