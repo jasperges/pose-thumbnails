@@ -218,9 +218,6 @@ def pose_thumbnails_draw(self, context):
     '''Draw the thumbnail enum in the Pose Library panel.'''
     if not context.object.pose_library.pose_markers:
         return
-    # user_prefs = context.user_preferences
-    # addon_prefs = user_prefs.addons[__package__].preferences
-    # show_labels = addon_prefs.show_labels
     poselib = context.object.pose_library
     thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
     show_labels = thumbnail_ui_settings.show_labels
@@ -255,11 +252,20 @@ def pose_thumbnails_draw(self, context):
             text = 'Add'
         row = sub_col.row(align=True)
         row.operator(AddPoseThumbnail.bl_idname, text=text)
-        row.operator(AddPoseThumbnailsFromDir.bl_idname, text='Batch Add')
-        # sub_col.separator()
+        row.operator(AddPoseThumbnailsFromDir.bl_idname, text='Batch Add/Change')
         row = sub_col.row(align=True)
-        row.operator(RemovePoseThumbnail.bl_idname, text='Remove')
-        row.operator(RemoveAllThumbnails.bl_idname, text='Remove All')
+        row_col = row.column(align=True)
+        row_col.operator(RemovePoseThumbnail.bl_idname, text='Remove')
+        if get_thumbnail_from_pose(poselib.pose_markers.active):
+            row_col.enabled = True
+        else:
+            row_col.enabled = False
+        row_col = row.column(align=True)
+        row_col.operator(RemoveAllThumbnails.bl_idname, text='Remove All')
+        if poselib.pose_thumbnails.collection:
+            row_col.enabled = True
+        else:
+            row_col.enabled = False
         sub_col.separator()
         sub_col.operator(
             RefreshThumbnails.bl_idname,
