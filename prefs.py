@@ -39,5 +39,5 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        # layout.prop(self, 'add_3dview_prop_panel')
+        layout.prop(self, 'add_3dview_prop_panel')
         layout.prop(self, 'pose_suffix')

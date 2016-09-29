@@ -694,6 +694,36 @@ class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
         )
 
 
+class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
+    '''Creates a pose thumbnail panel in the 3D View Properties panel'''
+    bl_label = "Pose Library"
+    bl_idname = "VIEW3D_PT_pose_previews"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_context = "data"
+
+    @classmethod
+    def poll(cls, context):
+        user_prefs = context.user_preferences
+        addon_prefs = user_prefs.addons[__package__].preferences
+        obj = context.object
+        return (obj and obj.type == 'ARMATURE'
+                and addon_prefs.add_3dview_prop_panel)
+
+    def draw(self, context):
+        poselib = context.object.pose_library
+        thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
+        show_labels = thumbnail_ui_settings.show_labels
+        layout = self.layout
+        col = layout.column(align=True)
+        col.template_icon_view(
+            poselib.pose_thumbnails,
+            'previews_ui',
+            show_labels=show_labels,
+            )
+        col.prop(thumbnail_ui_settings, 'show_labels', toggle=True)
+
+
 def register():
     '''Register all pose thumbnail related things.'''
     bpy.types.Action.pose_thumbnails = bpy.props.PointerProperty(
