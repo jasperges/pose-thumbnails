@@ -1,6 +1,9 @@
 import bpy
 
 
+DEFAULT_POSE_SUFFIX = '[T]'
+
+
 def change_suffix(pose, old_suffix, new_suffix):
     '''Change the old suffix to the new one.'''
     clean_name = pose.name[:-len(old_suffix)]
@@ -30,7 +33,7 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
         name='Pose Suffix',
         description=('Add this suffix to the name of a pose when it has a'
                      ' thumbnail. Leave empty to add nothing.'),
-        default='[T]',
+        default=DEFAULT_POSE_SUFFIX,
         update=update_pose_suffixes,
         )
 

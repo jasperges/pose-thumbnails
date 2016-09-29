@@ -25,7 +25,10 @@ def get_pose_suffix_from_prefs():
     '''Get the pose suffix from the addon preferences.'''
     user_prefs = bpy.context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
-    return addon_prefs.pose_suffix
+    if addon_prefs:
+        return addon_prefs.pose_suffix
+    else:
+        return prefs.DEFAULT_POSE_SUFFIX
 
 
 def clean_pose_name(pose_name):
