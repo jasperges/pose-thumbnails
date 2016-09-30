@@ -48,7 +48,7 @@ def suffix_pose_name(pose_name):
     if pose_name.endswith(pose_suffix) or not pose_suffix.strip():
         return pose_name
     else:
-        return ' '.join((pose_name, pose_suffix))
+        return ''.join((pose_name, pose_suffix))
 
 
 def get_images_from_dir(directory, sort=True):
