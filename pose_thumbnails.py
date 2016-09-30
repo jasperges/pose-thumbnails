@@ -26,9 +26,9 @@ def get_pose_suffix_from_prefs():
     user_prefs = bpy.context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
     if addon_prefs:
-        return addon_prefs.pose_suffix
+        return ''.join((' ', addon_prefs.pose_suffix))
     else:
-        return prefs.DEFAULT_POSE_SUFFIX
+        return ''.join((' ', prefs.DEFAULT_POSE_SUFFIX))
 
 
 def clean_pose_name(pose_name):
@@ -42,9 +42,7 @@ def clean_pose_name(pose_name):
 
 def suffix_pose_name(pose_name):
     '''Return the pose name with the thumbnail suffix.'''
-    user_prefs = bpy.context.user_preferences
-    addon_prefs = user_prefs.addons[__package__].preferences
-    pose_suffix = addon_prefs.pose_suffix
+    pose_suffix = get_pose_suffix_from_prefs()
     if pose_name.endswith(pose_suffix) or not pose_suffix.strip():
         return pose_name
     else:
@@ -134,8 +132,6 @@ def add_no_thumbnail_to_pose(pose):
     '''Add info with 'no thumbnail' image to the pose.'''
     poselib = pose.id_data
     no_thumbnail = poselib.pose_thumbnails.collection.add()
-    no_thumbnail.name = pose.name
-    no_thumbnail.index = get_pose_index(pose)
     no_thumbnail.frame = pose.frame
     no_thumbnail.filepath = get_no_thumbnail_path()
     return no_thumbnail
@@ -176,7 +172,8 @@ def get_enum_items(thumbnails, pcoll):
                     'IMAGE',
                     )
         pose_index, pose = get_pose_from_thumbnail(thumbnail)
-        thumbnail_name = clean_pose_name(pose.name)
+        pose_name = pose.name
+        thumbnail_name = clean_pose_name(pose_name)
         enum_items.append((
             str(thumbnail.frame),
             thumbnail_name,
