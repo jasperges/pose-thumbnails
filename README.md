@@ -26,8 +26,6 @@ When making thumbnails for your poses, consider the following:
 
 ## Issues, bugs and suggestions
 
-**_Known Issue:_** When using the 'Show Labels' option, sometimes the labels show weird characters. I don't know why this happens, but pressing 'Refresh' fixes it most of the times.
-
 If you experience an issue or a bug with the addon or have ideas for improvements, please create an issue here on Github.
 
 ## Roadmap
