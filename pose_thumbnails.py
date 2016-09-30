@@ -88,23 +88,9 @@ def get_pose_from_thumbnail(thumbnail):
     if thumbnail is None:
         return
     poselib = thumbnail.id_data
-    for i, pose in enumerate(poselib.pose_markers):
+    for pose in poselib.pose_markers:
         if pose.frame == thumbnail.frame:
-            return (i, pose)
-
-
-def get_pose_index(pose):
-    '''Get the index of the pose.'''
-    poselib = pose.id_data
-    return poselib.pose_markers.find(pose.name)
-
-
-def get_thumbnail_index(thumbnail):
-    '''Return the index of the pose of the thumbnail.'''
-    poselib = thumbnail.id_data
-    for i, posemarker in enumerate(poselib.pose_markers):
-        if thumbnail.frame == posemarker.frame:
-            return i
+            return pose
 
 
 def get_no_thumbnail_path():
@@ -128,6 +114,27 @@ def get_no_thumbnail_image(pcoll):
     return no_thumbnail
 
 
+def get_placeholder_path():
+    '''Get the path to the placeholder image.'''
+    placeholder_path = os.path.join(
+        os.path.dirname(__file__),
+        'thumbnails',
+        'placeholder.png',
+        )
+    return placeholder_path
+
+
+def get_placeholder_image(pcoll):
+    '''Return the placeholder preview icon.'''
+    placeholder_path = get_placeholder_path()
+    placeholder = pcoll.get('Placeholder') or pcoll.load(
+        'Placeholder',
+        placeholder_path,
+        'IMAGE',
+        )
+    return placeholder
+
+
 def add_no_thumbnail_to_pose(pose):
     '''Add info with 'no thumbnail' image to the pose.'''
     poselib = pose.id_data
@@ -137,50 +144,38 @@ def add_no_thumbnail_to_pose(pose):
     return no_thumbnail
 
 
-def sort_thumbnails(poselib):
-    '''Return the thumbnail info of a pose library sorted by pose index.
-
-    If a pose doesn't have a thumbnail return the 'no thumbnail' image.
-
-    Args:
-        poselib (pose library): The pose library for which to get the thumbnails.
-
-    Returns:
-        list: the sorted pose thumbnail info
-    '''
-    pcoll = preview_collections['pose_library']
-    for pose in poselib.pose_markers:
-        # yield get_thumbnail_from_pose(pose) or add_no_thumbnail_to_pose(pose)
-        thumbnail = get_thumbnail_from_pose(pose)
-        if thumbnail:
-            yield thumbnail
-
-
-def get_enum_items(thumbnails, pcoll):
+def get_enum_items(poselib, pcoll):
     '''Return the enum items for the thumbnail previews.'''
     enum_items = []
-    for thumbnail in thumbnails:
-        image = pcoll.get(thumbnail.filepath)
-        if not image:
-            image_path = os.path.normpath(bpy.path.abspath(thumbnail.filepath))
-            if not os.path.isfile(image_path):
-                image = get_no_thumbnail_image(pcoll)
-            else:
-                image = pcoll.load(
-                    thumbnail.filepath,
-                    image_path,
-                    'IMAGE',
-                    )
-        pose_index, pose = get_pose_from_thumbnail(thumbnail)
-        pose_name = pose.name
-        thumbnail_name = clean_pose_name(pose_name)
-        enum_items.append((
-            str(thumbnail.frame),
-            thumbnail_name,
-            '',
-            image.icon_id,
-            pose_index,
-            ))
+    thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
+    show_all_poses = thumbnail_ui_settings.show_all_poses
+    for i, pose in enumerate(poselib.pose_markers):
+        thumbnail = get_thumbnail_from_pose(pose)
+        if thumbnail:
+            image = pcoll.get(thumbnail.filepath)
+            if not image:
+                image_path = os.path.normpath(
+                    bpy.path.abspath(thumbnail.filepath))
+                if not os.path.isfile(image_path):
+                    image = get_no_thumbnail_image(pcoll)
+                else:
+                    image = pcoll.load(
+                        thumbnail.filepath,
+                        image_path,
+                        'IMAGE',
+                        )
+        elif show_all_poses:
+            image = get_placeholder_image(pcoll)
+        else:
+            image = None
+        if image is not None:
+            enum_items.append((
+                str(pose.frame),
+                clean_pose_name(pose.name),
+                '',
+                image.icon_id,
+                i,
+                ))
     return enum_items
 
 
@@ -192,9 +187,8 @@ def get_pose_thumbnails(self, context):
         not poselib.pose_thumbnails.collection):
             return []
     pcoll = preview_collections['pose_library']
-    sorted_thumbnails = sort_thumbnails(poselib)
     enum_items = get_enum_items(
-        sorted_thumbnails,
+        poselib,
         pcoll,
         )
     pcoll.pose_thumbnails = enum_items
@@ -430,7 +424,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
                     image_paths.append(image_path)
         return image_paths
 
-    def create_thumbnail(self, index, pose, image):
+    def create_thumbnail(self, pose, image):
         '''Create or update the thumbnail for a pose.'''
         if not self.overwrite_existing and get_thumbnail_from_pose(pose):
             return
@@ -461,7 +455,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         thumbnails_collection = poselib.pose_thumbnails.collection
         image_files = self.image_files
         match_map = {os.path.splitext(os.path.basename(f))[0]: f for f in image_files}
-        for i, pose in enumerate(poselib.pose_markers):
+        for pose in poselib.pose_markers:
             match = difflib.get_close_matches(
                 clean_pose_name(pose.name),
                 match_map.keys(),
@@ -470,7 +464,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
                 )
             if match:
                 thumbnail_image = match_map[match[0]]
-                self.create_thumbnail(i, pose, thumbnail_image)
+                self.create_thumbnail(pose, thumbnail_image)
 
     def match_thumbnails_by_index(self):
         '''Map the thumbnail images to the index of the poses.'''
@@ -643,14 +637,17 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
     '''A property to hold the option info for the thumbnail UI.'''
     creation_group = bpy.props.BoolProperty(
         name='Thumbnail Creation',
+        description='Show or hide the thumbnail creation options.',
         default=False,
         )
     show_labels = bpy.props.BoolProperty(
         name='Show Labels',
+        description='Show the labels (pose names) underneath the thumbnails.',
         default=True,
         )
     show_all_poses = bpy.props.BoolProperty(
         name='Show All Poses',
+        description='Also show poses that don\'t have a thumbnail.',
         default=False,
         )
 
