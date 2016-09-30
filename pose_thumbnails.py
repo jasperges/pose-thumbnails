@@ -224,9 +224,10 @@ def update_pose(self, context):
 
 def pose_thumbnails_draw(self, context):
     '''Draw the thumbnail enum in the Pose Library panel.'''
-    if not context.object.pose_library.pose_markers:
+    obj = context.object
+    poselib = obj.pose_library
+    if poselib is None or not poselib.pose_markers:
         return
-    poselib = context.object.pose_library
     thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
     show_labels = thumbnail_ui_settings.show_labels
     layout = self.layout
@@ -707,21 +708,25 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
         user_prefs = context.user_preferences
         addon_prefs = user_prefs.addons[__package__].preferences
         obj = context.object
-        return (obj and obj.type == 'ARMATURE'
-                and addon_prefs.add_3dview_prop_panel)
+        return (obj and obj.type == 'ARMATURE' and
+                addon_prefs.add_3dview_prop_panel)
 
     def draw(self, context):
-        poselib = context.object.pose_library
-        thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
-        show_labels = thumbnail_ui_settings.show_labels
+        obj = context.object
+        poselib = obj.pose_library
         layout = self.layout
         col = layout.column(align=True)
-        col.template_icon_view(
-            poselib.pose_thumbnails,
-            'previews_ui',
-            show_labels=show_labels,
-            )
-        col.prop(thumbnail_ui_settings, 'show_labels', toggle=True)
+        # layout.template_ID(obj, "pose_library", new="poselib.new", unlink="poselib.unlink")
+        col.template_ID(obj, "pose_library", unlink="poselib.unlink")
+        if poselib is not None:
+            thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
+            show_labels = thumbnail_ui_settings.show_labels
+            col.template_icon_view(
+                poselib.pose_thumbnails,
+                'previews_ui',
+                show_labels=show_labels,
+                )
+            col.prop(thumbnail_ui_settings, 'show_labels', toggle=True)
 
 
 def register():
