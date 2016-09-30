@@ -340,16 +340,11 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
         else:
             filepath = bpy.path.relpath(self.filepath)
         poselib = context.object.pose_library
-        active_posemarker = poselib.pose_markers.active
-        active_posemarker_index = poselib.pose_markers.active_index
-        pose_name = active_posemarker.name
-        name = clean_pose_name(pose_name)
-        active_posemarker.name = suffix_pose_name(pose_name)
-        thumbnail = (get_thumbnail_from_pose(active_posemarker) or
+        pose = poselib.pose_markers.active
+        pose.name = suffix_pose_name(pose.name)
+        thumbnail = (get_thumbnail_from_pose(pose) or
                      poselib.pose_thumbnails.collection.add())
-        thumbnail.name = name
-        thumbnail.index = active_posemarker_index
-        thumbnail.frame = active_posemarker.frame
+        thumbnail.frame = pose.frame
         thumbnail.filepath = filepath
         return {'FINISHED'}
 
@@ -443,12 +438,9 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         if not self.overwrite_existing and get_thumbnail_from_pose(pose):
             return
         poselib = self.poselib
-        name = clean_pose_name(pose.name)
         pose.name = suffix_pose_name(pose.name)
         thumbnail = (get_thumbnail_from_pose(pose) or
                      poselib.pose_thumbnails.collection.add())
-        thumbnail.name = name
-        thumbnail.index = index
         thumbnail.frame = pose.frame
         thumbnail.filepath = image
 
@@ -625,19 +617,11 @@ class RefreshThumbnails(bpy.types.Operator):
             else:
                 pose.name = suffix_pose_name(pose.name)
 
-    def update_thumbnails(self):
-        '''Update the info of the thumbnails.'''
-        for thumbnail in self.poselib.pose_thumbnails.collection:
-            index, pose = get_pose_from_thumbnail(thumbnail)
-            thumbnail.name = clean_pose_name(pose.name)
-            thumbnail.index = index
-
     def execute(self, context):
         self.poselib = context.object.pose_library
         self.clean_pose_names()
         self.remove_unused_thumbnails()
         self.remove_double_thumbnails()
-        self.update_thumbnails()
         pcoll = preview_collections['pose_library']
         pcoll.clear()
         return {'FINISHED'}
@@ -645,16 +629,6 @@ class RefreshThumbnails(bpy.types.Operator):
 
 class PoselibThumbnail(bpy.types.PropertyGroup):
     '''A property to hold the thumbnail info for a pose.'''
-    name = bpy.props.StringProperty(
-        name='Pose name',
-        description='The name of the pose marker.',
-        default='',
-        )
-    index = bpy.props.IntProperty(
-        name='Pose index',
-        description='The index of the pose marker.',
-        default=-1,
-        )
     frame = bpy.props.IntProperty(
         name='Pose frame',
         description='The frame of the pose marker.',
