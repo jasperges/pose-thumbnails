@@ -162,6 +162,7 @@ def sort_thumbnails(poselib):
 
 def get_enum_items(thumbnails, pcoll):
     '''Return the enum items for the thumbnail previews.'''
+    enum_items = []
     for thumbnail in thumbnails:
         image = pcoll.get(thumbnail.filepath)
         if not image:
@@ -174,15 +175,16 @@ def get_enum_items(thumbnails, pcoll):
                     image_path,
                     'IMAGE',
                     )
-        _, pose = get_pose_from_thumbnail(thumbnail)
+        pose_index, pose = get_pose_from_thumbnail(thumbnail)
         thumbnail_name = clean_pose_name(pose.name)
-        yield ((
+        enum_items.append((
             str(thumbnail.frame),
             thumbnail_name,
             '',
             image.icon_id,
-            thumbnail.index
+            pose_index,
             ))
+    return enum_items
 
 
 def get_pose_thumbnails(self, context):
