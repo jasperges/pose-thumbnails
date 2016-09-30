@@ -239,7 +239,9 @@ def pose_thumbnails_draw(self, context):
         'previews_ui',
         show_labels=show_labels,
         )
-    col.prop(thumbnail_ui_settings, 'show_labels', toggle=True)
+    row = col.row(align=True)
+    row.prop(thumbnail_ui_settings, 'show_labels', toggle=True, text='Labels')
+    row.prop(thumbnail_ui_settings, 'show_all_poses', toggle=True, text='All Poses')
     col.separator()
     box = col.box()
     if thumbnail_ui_settings.creation_group:
@@ -675,6 +677,10 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
     show_labels = bpy.props.BoolProperty(
         name='Show Labels',
         default=True,
+        )
+    show_all_poses = bpy.props.BoolProperty(
+        name='Show All Poses',
+        default=False,
         )
 
 
