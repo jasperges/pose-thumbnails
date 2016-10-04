@@ -12,7 +12,7 @@ Just create a pose library, add poses and start adding thumbnails. You can assig
 By default a '[T]' suffix is added to a pose name to show it has a thumbnail. You can change this in the user preferences.
 Now just click on the thumbnails to apply a pose.
 
-Since Blender 2.78 you can re-arrange the poses. The thumbnails will match the new arrangement.
+If you use a build from the buildbot you can re-arrange the poses. The thumbnails will match the new arrangement.
 
 **_TIP:_** If you used the old version of this addon, you can simply add the thumbnails you created for that by clicking 'Batch Add/Change' and then choose 'Index' as mapping method.
 
