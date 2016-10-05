@@ -93,6 +93,13 @@ def get_pose_from_thumbnail(thumbnail):
             return pose
 
 
+def get_pose_index_from_frame(poselib, frame):
+    '''Get the pose index of the pose with the specified frame.'''
+    for i, pose in enumerate(poselib.pose_markers):
+        if pose.frame == frame:
+            return i
+
+
 def get_no_thumbnail_path():
     '''Get the path to the 'no thumbnail' image.'''
     no_thumbnail_path = os.path.join(
@@ -195,6 +202,77 @@ def get_pose_thumbnails(self, context):
     return pcoll.pose_thumbnails
 
 
+def get_current_pose():
+    '''Brute force copies all location/rotation/scale of all bones and returns list.'''
+    armature = bpy.context.object
+    pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
+    pose = []
+    for pose_bone in pose_bones:
+        rotation_mode = pose_bone.rotation_mode
+        rotation_name = ''
+        if rotation_mode in ['QUATERNION']:
+            rotation_name = 'rotation_quaternion'
+        elif rotation_mode in ['XYZ', 'XZY', 'YXZ', 'YZX', 'ZYX', 'ZXY']:
+            rotation_name = 'rotation_euler'
+        elif rotation_mode in ['AXIS_ANGLE']:
+            rotation_name = 'rotation_axis_angle'
+        if rotation_name == 'rotation_axis_angle':
+            pose.append([
+                pose_bone.location.copy(),
+                pose_bone.rotation_axis_angle,
+                pose_bone.scale.copy(),
+                rotation_name,
+                ])
+        else:
+            pose.append([
+                pose_bone.location.copy(),
+                getattr(pose_bone, rotation_name).copy(),
+                pose_bone.scale.copy(),
+                rotation_name,
+                ])
+    return pose
+
+
+def mix_to_pose(pose, factor):
+    '''Mixes the given pose and the current pose together.'''
+
+    def linear_mix(orig, new, factor):
+        return (orig * (1 - factor)) + (new * factor)
+
+    auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
+    armature = bpy.context.object
+    pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
+    for pose_bone, bone_pose in zip(pose_bones, pose):
+        # moved from for loops to hard coded in attempt to increase speed,
+        # this is the critical section!
+        #for x in range(len(bone_pose[1])): #position
+        #    pose_bone.location[x] =linear_mix(pose_bone.location[x], bone_pose[1][x], factor)
+        pose_bone.location.x = linear_mix(pose_bone.location.x, bone_pose[0][0], factor)
+        pose_bone.location.y = linear_mix(pose_bone.location.y, bone_pose[0][1], factor)
+        pose_bone.location.z = linear_mix(pose_bone.location.z, bone_pose[0][2], factor)
+        pose_bone.scale.x = linear_mix(pose_bone.scale.x, bone_pose[2][0], factor)
+        pose_bone.scale.y = linear_mix(pose_bone.scale.y, bone_pose[2][1], factor)
+        pose_bone.scale.z = linear_mix(pose_bone.scale.z, bone_pose[2][2], factor)
+        if bone_pose[3] == "rotation_quaternion" or bone_pose[3] == '':
+            pose_bone.rotation_quaternion.w = linear_mix(pose_bone.rotation_quaternion.w, bone_pose[1][0], factor)
+            pose_bone.rotation_quaternion.x = linear_mix(pose_bone.rotation_quaternion.x, bone_pose[1][1], factor)
+            pose_bone.rotation_quaternion.y = linear_mix(pose_bone.rotation_quaternion.y, bone_pose[1][2], factor)
+            pose_bone.rotation_quaternion.z = linear_mix(pose_bone.rotation_quaternion.z, bone_pose[1][3], factor)
+        elif bone_pose[3] == "rotation_euler":
+            pose_bone.rotation_euler.x = linear_mix(pose_bone.rotation_euler.x, bone_pose[1][0], factor)
+            pose_bone.rotation_euler.y = linear_mix(pose_bone.rotation_euler.y, bone_pose[1][1], factor)
+            pose_bone.rotation_euler.z = linear_mix(pose_bone.rotation_euler.z, bone_pose[1][2], factor)
+        elif bone_pose[3] == "rotation_axis_angle":
+            pose_bone.rotation_axis_angle[0] = linear_mix(pose_bone.rotation_axis_angle[0], bone_pose[1][0], factor)
+            pose_bone.rotation_axis_angle[1] = linear_mix(pose_bone.rotation_axis_angle[1], bone_pose[1][1], factor)
+            pose_bone.rotation_axis_angle[2] = linear_mix(pose_bone.rotation_axis_angle[2], bone_pose[1][2], factor)
+            pose_bone.rotation_axis_angle[3] = linear_mix(pose_bone.rotation_axis_angle[3], bone_pose[1][3], factor)
+        else:
+            logger.error('No valid rotation mode found.')
+    if auto_insert:
+        bpy.ops.anim.keyframe_insert_menu(type='BUILTIN_KSI_VisualLocRotScale')
+
+
 def update_pose(self, context):
     '''Callback when the enum property is updated (e.g. the index of the active
        item is changed).
@@ -208,11 +286,16 @@ def update_pose(self, context):
     '''
     pose_frame = int(self.previews_ui)
     poselib = self.id_data
-    for i, pose_marker in enumerate(poselib.pose_markers):
-        if pose_marker.frame == pose_frame:
-            bpy.ops.poselib.apply_pose(pose_index=i)
-            logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
-            break
+    pose_index = get_pose_index_from_frame(poselib, pose_frame)
+    # for i, pose_marker in enumerate(poselib.pose_markers):
+    #     if pose_marker.frame == pose_frame:
+    #         bpy.ops.poselib.apply_pose(pose_index=i)
+    #         logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
+    #         break
+    factor = poselib.pose_mix_factor
+    bpy.ops.poselib.mix_pose(pose_index=pose_index, factor=factor)
+    # bpy.ops.poselib.apply_pose(pose_index=pose_index)
+    # logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
 
 
 def pose_thumbnails_draw(self, context):
@@ -233,6 +316,7 @@ def pose_thumbnails_draw(self, context):
     row = col.row(align=True)
     row.prop(thumbnail_ui_settings, 'show_labels', toggle=True, text='Labels')
     row.prop(thumbnail_ui_settings, 'show_all_poses', toggle=True, text='All Poses')
+    col.prop(poselib, 'pose_mix_factor', text='Mix Factor')
     col.separator()
     box = col.box()
     if thumbnail_ui_settings.creation_group:
@@ -305,6 +389,46 @@ def pose_thumbnails_options_draw(self, context):
         # col.label(text="General:")
         # row = col.row(align=True)
         # row = col.split(.5, align=True)
+
+
+class MixPose(bpy.types.Operator):
+    '''Mix-apply the selected library pose on to the current pose.'''
+    bl_idname = 'poselib.mix_pose'
+    bl_label = 'Mix the pose with the current pose.'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    factor = bpy.props.FloatProperty(
+        name='Mix Factor',
+        default=100,
+        subtype='PERCENTAGE',
+        unit='NONE',
+        min = 0,
+        max = 100,
+        description='Mix Factor'
+        )
+    pose_index = bpy.props.IntProperty(
+        name='Pose Index',
+        default=0,
+        min=0,
+        description='The index of the pose to mix.',
+        )
+
+    @classmethod
+    def poll(cls, context):
+        return (context.object and
+                context.object.type == 'ARMATURE' and
+                context.object.mode == 'POSE')
+
+    def execute(self, context):
+        armature = context.object
+        pre_pose = get_current_pose()
+        bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+        mix_to_pose(pre_pose, 1 - self.factor / 100)
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'factor', text='Mix Factor')
 
 
 class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
@@ -702,13 +826,38 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
                 'previews_ui',
                 show_labels=show_labels,
                 )
-            col.prop(thumbnail_ui_settings, 'show_labels', toggle=True)
+            row = col.row(align=True)
+            row.prop(
+                thumbnail_ui_settings,
+                'show_labels',
+                toggle=True,
+                text='Labels',
+                )
+            row.prop(
+                thumbnail_ui_settings,
+                'show_all_poses',
+                toggle=True,
+                text='All Poses',
+                )
+            col.prop(
+                poselib,
+                'pose_mix_factor',
+                text='Mix Factor',
+                )
 
 
 def register():
     '''Register all pose thumbnail related things.'''
     bpy.types.Action.pose_thumbnails = bpy.props.PointerProperty(
         type=PoselibThumbnailsInfo)
+    bpy.types.Action.pose_mix_factor = bpy.props.FloatProperty(
+        name='Mix Factor',
+        description='The mix factor between the current pose and the new pose',
+        subtype='PERCENTAGE',
+        min=0,
+        max=100,
+        default=100,
+        )
     bpy.types.DATA_PT_pose_library.prepend(pose_thumbnails_draw)
     # bpy.types.DATA_PT_pose_library.append(pose_thumbnails_options_draw)
 
@@ -726,3 +875,4 @@ def unregister():
     preview_collections.clear()
 
     del bpy.types.Action.pose_thumbnails
+    del bpy.types.Action.pose_mix_factor
