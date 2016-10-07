@@ -33,5 +33,4 @@ If you experience an issue or a bug with the addon or have ideas for improvement
 Some things I would like to add:
 
 - Make it simple to quickly generate thumbnails. What I have in mind at the moment is that you have to place a camera, choose the destination directory and it will render out all the thumbnails for the poses. Probably you can also add stamps to the thumbnails.
-- Make the option to mix a pose with the current one. Beforehand you choose the percentage or tweak it afterwards in the tool panel. (See: [https://github.com/TheDuckCow/pose-tools](https://github.com/TheDuckCow/pose-tools))
 - Pack the images into the Blend file (I'm not sure about this one yet).

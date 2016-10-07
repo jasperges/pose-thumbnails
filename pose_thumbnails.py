@@ -5,6 +5,7 @@ import logging
 import re
 import difflib
 import copy
+import time
 if 'bpy' in locals():
     import importlib
     if 'prefs' in locals():
@@ -394,7 +395,8 @@ class MixPose(bpy.types.Operator):
     '''Mix-apply the selected library pose on to the current pose.'''
     bl_idname = 'poselib.mix_pose'
     bl_label = 'Mix the pose with the current pose.'
-    bl_options = {'REGISTER', 'UNDO'}
+    # bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
 
     factor = bpy.props.FloatProperty(
         name='Mix Factor',
@@ -412,6 +414,11 @@ class MixPose(bpy.types.Operator):
         description='The index of the pose to mix.',
         )
 
+    def __init__(self):
+        self.just_clicked = False
+        self.pre_pose = get_current_pose()
+        self.start_time = time.time()
+
     @classmethod
     def poll(cls, context):
         return (context.object and
@@ -419,19 +426,37 @@ class MixPose(bpy.types.Operator):
                 context.object.mode == 'POSE')
 
     def execute(self, context):
-        # armature = context.object
-        poselib = context.object.pose_library
-        pre_pose = get_current_pose()
+        mouse_delta = self.mouse_x - self.mouse_prev_x
+        factor = min(100, max(0, mouse_delta))
+        if self.just_clicked:
+            bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+            self.factor = 100
+            return {'FINISHED'}
+        self.factor = factor
         bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-        mix_to_pose(pre_pose, 1 - self.factor / 100)
-        poselib.pose_mix_factor = self.factor
+        mix_to_pose(self.pre_pose, 1 - self.factor / 100)
         return {'FINISHED'}
 
+    def modal(self, context, event):
+        if event.type == 'MOUSEMOVE':
+            self.mouse_x = event.mouse_x
+            self.execute(context)
+        elif event.type == 'LEFTMOUSE':
+            if self.factor == 0 and time.time() - self.start_time < 0.1:
+                self.just_clicked = True
+                self.execute(context)
+            return {'FINISHED'}
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            return {'CANCELLED'}
+        return {'RUNNING_MODAL'}
+
     def invoke(self, context, event):
-        poselib = context.object.pose_library
-        self.factor = poselib.pose_mix_factor
+        self.mouse_x = event.mouse_x
+        self.mouse_prev_x = event.mouse_prev_x
+        self.execute(context)
         wm = context.window_manager
-        return wm.invoke_props_popup(self, event)
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
 
     def draw(self, context):
         layout = self.layout
