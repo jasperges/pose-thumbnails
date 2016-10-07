@@ -292,8 +292,7 @@ def update_pose(self, context):
     #         bpy.ops.poselib.apply_pose(pose_index=i)
     #         logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
     #         break
-    factor = poselib.pose_mix_factor
-    bpy.ops.poselib.mix_pose(pose_index=pose_index, factor=factor)
+    bpy.ops.poselib.mix_pose('INVOKE_DEFAULT', pose_index=pose_index)
     # bpy.ops.poselib.apply_pose(pose_index=pose_index)
     # logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
 
@@ -316,7 +315,7 @@ def pose_thumbnails_draw(self, context):
     row = col.row(align=True)
     row.prop(thumbnail_ui_settings, 'show_labels', toggle=True, text='Labels')
     row.prop(thumbnail_ui_settings, 'show_all_poses', toggle=True, text='All Poses')
-    col.prop(poselib, 'pose_mix_factor', text='Mix Factor')
+    # col.prop(poselib, 'pose_mix_factor', text='Mix Factor')
     col.separator()
     box = col.box()
     if thumbnail_ui_settings.creation_group:
@@ -420,11 +419,19 @@ class MixPose(bpy.types.Operator):
                 context.object.mode == 'POSE')
 
     def execute(self, context):
-        armature = context.object
+        # armature = context.object
+        poselib = context.object.pose_library
         pre_pose = get_current_pose()
         bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
         mix_to_pose(pre_pose, 1 - self.factor / 100)
+        poselib.pose_mix_factor = self.factor
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        poselib = context.object.pose_library
+        self.factor = poselib.pose_mix_factor
+        wm = context.window_manager
+        return wm.invoke_props_popup(self, event)
 
     def draw(self, context):
         layout = self.layout
@@ -783,6 +790,7 @@ class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
     previews_ui = bpy.props.EnumProperty(
         items=get_pose_thumbnails,
         update=update_pose,
+        # update=bpy.ops.poselib.mix_pose()
         )
     ui_settings = bpy.props.PointerProperty(
         type=PoselibThumbnailsOptions,
@@ -838,11 +846,6 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
                 'show_all_poses',
                 toggle=True,
                 text='All Poses',
-                )
-            col.prop(
-                poselib,
-                'pose_mix_factor',
-                text='Mix Factor',
                 )
 
 
