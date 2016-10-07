@@ -414,11 +414,6 @@ class MixPose(bpy.types.Operator):
         description='The index of the pose to mix.',
         )
 
-    def __init__(self):
-        self.just_clicked = False
-        self.pre_pose = get_current_pose()
-        self.start_time = time.time()
-
     @classmethod
     def poll(cls, context):
         return (context.object and
@@ -426,13 +421,11 @@ class MixPose(bpy.types.Operator):
                 context.object.mode == 'POSE')
 
     def execute(self, context):
-        mouse_delta = self.mouse_x - self.mouse_prev_x
-        factor = min(100, max(0, mouse_delta))
         if self.just_clicked:
             bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-            self.factor = 100
             return {'FINISHED'}
-        self.factor = factor
+        mouse_delta = self.mouse_x - self.mouse_prev_x
+        self.factor = min(100, max(0, mouse_delta))
         bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
         mix_to_pose(self.pre_pose, 1 - self.factor / 100)
         return {'FINISHED'}
@@ -442,15 +435,17 @@ class MixPose(bpy.types.Operator):
             self.mouse_x = event.mouse_x
             self.execute(context)
         elif event.type == 'LEFTMOUSE':
-            if self.factor == 0 and time.time() - self.start_time < 0.1:
-                self.just_clicked = True
-                self.execute(context)
             return {'FINISHED'}
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             return {'CANCELLED'}
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
+        if not event.shift:
+            self.just_clicked = True
+            return self.execute(context)
+        self.just_clicked = False
+        self.pre_pose = get_current_pose()
         self.mouse_x = event.mouse_x
         self.mouse_prev_x = event.mouse_prev_x
         self.execute(context)
