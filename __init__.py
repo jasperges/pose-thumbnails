@@ -20,7 +20,7 @@
 bl_info = {
     'name': 'Pose Library Thumbnails',
     'author': 'Jasper van Nieuwenhuizen (jasperge)',
-    'version': (0, 2, 2),
+    'version': (0, 2, 3),
     'blender': (2, 7, 8),
     'location': 'Properties > Armature > Pose Library',
     'description': 'Add thumbnails for the poses of a pose Library',
