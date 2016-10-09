@@ -204,72 +204,32 @@ def get_pose_thumbnails(self, context):
 
 
 def get_current_pose():
-    '''Brute force copies all location/rotation/scale of all bones and returns list.'''
+    '''Copies all pose bone matrices (matrix_basis)'''
+    # TODO: should also get custom props
     armature = bpy.context.object
     pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
-    pose = []
+    pose = {}
     for pose_bone in pose_bones:
-        rotation_mode = pose_bone.rotation_mode
-        rotation_name = ''
-        if rotation_mode in ['QUATERNION']:
-            rotation_name = 'rotation_quaternion'
-        elif rotation_mode in ['XYZ', 'XZY', 'YXZ', 'YZX', 'ZYX', 'ZXY']:
-            rotation_name = 'rotation_euler'
-        elif rotation_mode in ['AXIS_ANGLE']:
-            rotation_name = 'rotation_axis_angle'
-        if rotation_name == 'rotation_axis_angle':
-            pose.append([
-                pose_bone.location.copy(),
-                pose_bone.rotation_axis_angle,
-                pose_bone.scale.copy(),
-                rotation_name,
-                ])
-        else:
-            pose.append([
-                pose_bone.location.copy(),
-                getattr(pose_bone, rotation_name).copy(),
-                pose_bone.scale.copy(),
-                rotation_name,
-                ])
+        pose[pose_bone] = pose_bone.matrix_basis.copy()
     return pose
 
 
 def mix_to_pose(pose, factor):
     '''Mixes the given pose and the current pose together.'''
+    # TODO: how to handle custom props that can not easily be mixed
+    #       (float values are simple, but what about others)?
+    #       e.g. see rotation mode prop on blenrig
 
     def linear_mix(orig, new, factor):
-        return (orig * (1 - factor)) + (new * factor)
+        return orig * (1 - factor) + new * factor
 
+    for pose_bone, new_matrix_basis in pose.items():
+        pose_bone.matrix_basis = linear_mix(
+            pose_bone.matrix_basis,
+            new_matrix_basis,
+            factor,
+            )
     auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
-    armature = bpy.context.object
-    pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
-    for pose_bone, bone_pose in zip(pose_bones, pose):
-        # moved from for loops to hard coded in attempt to increase speed,
-        # this is the critical section!
-        #for x in range(len(bone_pose[1])): #position
-        #    pose_bone.location[x] =linear_mix(pose_bone.location[x], bone_pose[1][x], factor)
-        pose_bone.location.x = linear_mix(pose_bone.location.x, bone_pose[0][0], factor)
-        pose_bone.location.y = linear_mix(pose_bone.location.y, bone_pose[0][1], factor)
-        pose_bone.location.z = linear_mix(pose_bone.location.z, bone_pose[0][2], factor)
-        pose_bone.scale.x = linear_mix(pose_bone.scale.x, bone_pose[2][0], factor)
-        pose_bone.scale.y = linear_mix(pose_bone.scale.y, bone_pose[2][1], factor)
-        pose_bone.scale.z = linear_mix(pose_bone.scale.z, bone_pose[2][2], factor)
-        if bone_pose[3] == "rotation_quaternion" or bone_pose[3] == '':
-            pose_bone.rotation_quaternion.w = linear_mix(pose_bone.rotation_quaternion.w, bone_pose[1][0], factor)
-            pose_bone.rotation_quaternion.x = linear_mix(pose_bone.rotation_quaternion.x, bone_pose[1][1], factor)
-            pose_bone.rotation_quaternion.y = linear_mix(pose_bone.rotation_quaternion.y, bone_pose[1][2], factor)
-            pose_bone.rotation_quaternion.z = linear_mix(pose_bone.rotation_quaternion.z, bone_pose[1][3], factor)
-        elif bone_pose[3] == "rotation_euler":
-            pose_bone.rotation_euler.x = linear_mix(pose_bone.rotation_euler.x, bone_pose[1][0], factor)
-            pose_bone.rotation_euler.y = linear_mix(pose_bone.rotation_euler.y, bone_pose[1][1], factor)
-            pose_bone.rotation_euler.z = linear_mix(pose_bone.rotation_euler.z, bone_pose[1][2], factor)
-        elif bone_pose[3] == "rotation_axis_angle":
-            pose_bone.rotation_axis_angle[0] = linear_mix(pose_bone.rotation_axis_angle[0], bone_pose[1][0], factor)
-            pose_bone.rotation_axis_angle[1] = linear_mix(pose_bone.rotation_axis_angle[1], bone_pose[1][1], factor)
-            pose_bone.rotation_axis_angle[2] = linear_mix(pose_bone.rotation_axis_angle[2], bone_pose[1][2], factor)
-            pose_bone.rotation_axis_angle[3] = linear_mix(pose_bone.rotation_axis_angle[3], bone_pose[1][3], factor)
-        else:
-            logger.error('No valid rotation mode found.')
     if auto_insert:
         bpy.ops.anim.keyframe_insert_menu(type='BUILTIN_KSI_VisualLocRotScale')
 
