@@ -214,8 +214,8 @@ def get_current_pose():
     return pose
 
 
-def mix_to_pose(pose, factor):
-    '''Mixes the given pose and the current pose together.'''
+def mix_to_pose(pose_a, pose_b, factor):
+    '''Mixes pose_b over pose_a with the given factor.'''
     # TODO: how to handle custom props that can not easily be mixed
     #       (float values are simple, but what about others)?
     #       e.g. see rotation mode prop on blenrig
@@ -223,10 +223,11 @@ def mix_to_pose(pose, factor):
     def linear_mix(orig, new, factor):
         return orig * (1 - factor) + new * factor
 
-    for pose_bone, new_matrix_basis in pose.items():
+    for pose_bone, pose_a_matrix_basis in pose_a.items():
+        pose_b_matrix_basis = pose_b[pose_bone]
         pose_bone.matrix_basis = linear_mix(
-            pose_bone.matrix_basis,
-            new_matrix_basis,
+            pose_a_matrix_basis,
+            pose_b_matrix_basis,
             factor,
             )
     auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
@@ -386,8 +387,8 @@ class MixPose(bpy.types.Operator):
             return {'FINISHED'}
         mouse_delta = self.mouse_x - self.mouse_prev_x
         self.factor = min(100, max(0, mouse_delta))
-        bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-        mix_to_pose(self.pre_pose, 1 - self.factor / 100)
+        mix_factor = self.factor / 100
+        mix_to_pose(self.current_pose, self.target_pose, mix_factor)
         return {'FINISHED'}
 
     def modal(self, context, event):
@@ -405,7 +406,11 @@ class MixPose(bpy.types.Operator):
             self.just_clicked = True
             return self.execute(context)
         self.just_clicked = False
-        self.pre_pose = get_current_pose()
+        self.current_pose = get_current_pose()
+        # TODO: Read the targe pose directly from the pose library, at least
+        #       if it improves performance.
+        bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+        self.target_pose = get_current_pose()
         self.mouse_x = event.mouse_x
         self.mouse_prev_x = event.mouse_prev_x
         self.execute(context)
