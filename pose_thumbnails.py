@@ -274,18 +274,22 @@ def update_pose(self, context):
 
 def pose_thumbnails_draw(self, context):
     '''Draw the thumbnail enum in the Pose Library panel.'''
+    user_prefs = context.user_preferences
+    addon_prefs = user_prefs.addons[__package__].preferences
     obj = context.object
     poselib = obj.pose_library
     if poselib is None or not poselib.pose_markers:
         return
     thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
     show_labels = thumbnail_ui_settings.show_labels
+    thumbnail_size = addon_prefs.thumbnail_size * 5
     layout = self.layout
     col = layout.column(align=True)
     col.template_icon_view(
         poselib.pose_thumbnails,
         'previews_ui',
         show_labels=show_labels,
+        scale=thumbnail_size,
         )
     row = col.row(align=True)
     row.prop(thumbnail_ui_settings, 'show_labels', toggle=True, text='Labels')
@@ -816,6 +820,8 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
                 addon_prefs.add_3dview_prop_panel)
 
     def draw(self, context):
+        user_prefs = context.user_preferences
+        addon_prefs = user_prefs.addons[__package__].preferences
         obj = context.object
         poselib = obj.pose_library
         layout = self.layout
@@ -825,10 +831,12 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
         if poselib is not None:
             thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
             show_labels = thumbnail_ui_settings.show_labels
+            thumbnail_size = addon_prefs.thumbnail_size * 5
             col.template_icon_view(
                 poselib.pose_thumbnails,
                 'previews_ui',
                 show_labels=show_labels,
+                scale=thumbnail_size,
                 )
             row = col.row(align=True)
             row.prop(

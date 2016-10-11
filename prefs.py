@@ -36,8 +36,16 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
         default=DEFAULT_POSE_SUFFIX,
         update=update_pose_suffixes,
         )
+    thumbnail_size = bpy.props.FloatProperty(
+        name='Thumbnail Size',
+        description='How large to draw the pose thumbnails.',
+        default=1.0,
+        min=0.1,
+        max=5.0,
+        )
 
     def draw(self, context):
         layout = self.layout
+        layout.prop(self, 'thumbnail_size')
         layout.prop(self, 'add_3dview_prop_panel')
         layout.prop(self, 'pose_suffix')
