@@ -205,31 +205,44 @@ def get_pose_thumbnails(self, context):
 
 def get_current_pose():
     '''Copies all pose bone matrices (matrix_basis)'''
-    # TODO: should also get custom props
     armature = bpy.context.object
     pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
     pose = {}
     for pose_bone in pose_bones:
-        pose[pose_bone] = pose_bone.matrix_basis.copy()
+        pose[pose_bone] = {}
+        pose[pose_bone]['matrix_basis'] = pose_bone.matrix_basis.copy()
+        for key, value in pose_bone.items():
+            if key != '_RNA_UI':
+                pose[pose_bone][key] = value
     return pose
 
 
 def mix_to_pose(pose_a, pose_b, factor):
     '''Mixes pose_b over pose_a with the given factor.'''
-    # TODO: how to handle custom props that can not easily be mixed
-    #       (float values are simple, but what about others)?
-    #       e.g. see rotation mode prop on blenrig
 
     def linear_mix(orig, new, factor):
         return orig * (1 - factor) + new * factor
 
-    for pose_bone, pose_a_matrix_basis in pose_a.items():
-        pose_b_matrix_basis = pose_b[pose_bone]
-        pose_bone.matrix_basis = linear_mix(
-            pose_a_matrix_basis,
-            pose_b_matrix_basis,
-            factor,
-            )
+    for pose_bone, pose_a_props in pose_a.items():
+        for prop, pose_a_value in pose_a_props.items():
+            pose_b_value = pose_b[pose_bone][prop]
+            if prop == 'matrix_basis':
+                pose_bone.matrix_basis = linear_mix(
+                    pose_a_value,
+                    pose_b_value,
+                    factor,
+                    )
+            else:
+                if isinstance(pose_a_value, float):
+                    pose_bone[prop] = linear_mix(
+                        pose_a_value,
+                        pose_b_value,
+                        factor,
+                        )
+                elif factor < 0.5:
+                    pose_bone[prop] = pose_a_value
+                else:
+                    pose_bone[prop] = pose_b_value
     auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
     if auto_insert:
         bpy.ops.anim.keyframe_insert_menu(type='BUILTIN_KSI_VisualLocRotScale')
@@ -407,8 +420,6 @@ class MixPose(bpy.types.Operator):
             return self.execute(context)
         self.just_clicked = False
         self.current_pose = get_current_pose()
-        # TODO: Read the targe pose directly from the pose library, at least
-        #       if it improves performance.
         bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
         self.target_pose = get_current_pose()
         self.mouse_x = event.mouse_x
