@@ -143,15 +143,6 @@ def get_placeholder_image(pcoll):
     return placeholder
 
 
-def add_no_thumbnail_to_pose(pose):
-    '''Add info with 'no thumbnail' image to the pose.'''
-    poselib = pose.id_data
-    no_thumbnail = poselib.pose_thumbnails.collection.add()
-    no_thumbnail.frame = pose.frame
-    no_thumbnail.filepath = get_no_thumbnail_path()
-    return no_thumbnail
-
-
 def get_enum_items(poselib, pcoll):
     '''Return the enum items for the thumbnail previews.'''
     enum_items = []
@@ -204,7 +195,7 @@ def get_pose_thumbnails(self, context):
 
 
 def get_current_pose():
-    '''Copies all pose bone matrices (matrix_basis)'''
+    '''Copies all pose bone matrices (matrix_basis) and custom props.'''
     armature = bpy.context.object
     pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
     pose = {}
@@ -262,14 +253,7 @@ def update_pose(self, context):
     pose_frame = int(self.previews_ui)
     poselib = self.id_data
     pose_index = get_pose_index_from_frame(poselib, pose_frame)
-    # for i, pose_marker in enumerate(poselib.pose_markers):
-    #     if pose_marker.frame == pose_frame:
-    #         bpy.ops.poselib.apply_pose(pose_index=i)
-    #         logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
-    #         break
     bpy.ops.poselib.mix_pose('INVOKE_DEFAULT', pose_index=pose_index)
-    # bpy.ops.poselib.apply_pose(pose_index=pose_index)
-    # logger.debug("Applying pose from pose marker '%s' (frame %s)" % (pose_marker.name, pose_frame))
 
 
 def pose_thumbnails_draw(self, context):
@@ -294,7 +278,6 @@ def pose_thumbnails_draw(self, context):
     row = col.row(align=True)
     row.prop(thumbnail_ui_settings, 'show_labels', toggle=True, text='Labels')
     row.prop(thumbnail_ui_settings, 'show_all_poses', toggle=True, text='All Poses')
-    # col.prop(poselib, 'pose_mix_factor', text='Mix Factor')
     col.separator()
     box = col.box()
     if thumbnail_ui_settings.creation_group:
@@ -340,40 +323,10 @@ def pose_thumbnails_draw(self, context):
             )
 
 
-def pose_thumbnails_options_draw(self, context):
-    '''Draw the thumbnail 'advanced' options in the Pose Library panel.'''
-    if not context.object.pose_library.pose_markers:
-        return
-    user_prefs = context.user_preferences
-    addon_prefs = user_prefs.addons[__package__].preferences
-    poselib = context.object.pose_library
-    layout = self.layout
-    col = layout.column(align=True)
-    # box = layout.box()
-    # col = box.column(align=True)
-    thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
-    if thumbnail_ui_settings.creation_group:
-        expand_icon = 'TRIA_DOWN'
-    else:
-        expand_icon = 'TRIA_RIGHT'
-    col.prop(
-        thumbnail_ui_settings,
-        'creation_group',
-        icon=expand_icon,
-        toggle=True,
-        )
-    if thumbnail_ui_settings.creation_group:
-        col.label(text='Advanced Settings')
-        # col.label(text="General:")
-        # row = col.row(align=True)
-        # row = col.split(.5, align=True)
-
-
 class MixPose(bpy.types.Operator):
     '''Mix-apply the selected library pose on to the current pose.'''
     bl_idname = 'poselib.mix_pose'
     bl_label = 'Mix the pose with the current pose.'
-    # bl_options = {'REGISTER', 'UNDO'}
     bl_options = {'UNDO'}
 
     factor = bpy.props.FloatProperty(
@@ -548,10 +501,8 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             if ext and ext in self.filename_ext:
                 image_path = os.path.join(directory, image_file)
                 if self.use_relative_path:
-                    # yield bpy.path.relpath(image_path)
                     image_paths.append(bpy.path.relpath(image_path))
                 else:
-                    # yield image_path
                     image_paths.append(image_path)
         return image_paths
 
@@ -790,7 +741,6 @@ class PoselibThumbnailsInfo(bpy.types.PropertyGroup):
     previews_ui = bpy.props.EnumProperty(
         items=get_pose_thumbnails,
         update=update_pose,
-        # update=bpy.ops.poselib.mix_pose()
         )
     ui_settings = bpy.props.PointerProperty(
         type=PoselibThumbnailsOptions,
@@ -826,7 +776,6 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
         poselib = obj.pose_library
         layout = self.layout
         col = layout.column(align=True)
-        # layout.template_ID(obj, "pose_library", new="poselib.new", unlink="poselib.unlink")
         col.template_ID(obj, "pose_library", unlink="poselib.unlink")
         if poselib is not None:
             thumbnail_ui_settings = poselib.pose_thumbnails.ui_settings
@@ -866,8 +815,6 @@ def register():
         default=100,
         )
     bpy.types.DATA_PT_pose_library.prepend(pose_thumbnails_draw)
-    # bpy.types.DATA_PT_pose_library.append(pose_thumbnails_options_draw)
-
     pcoll = bpy.utils.previews.new()
     pcoll.pose_thumbnails = ()
     preview_collections['pose_library'] = pcoll
@@ -876,10 +823,8 @@ def register():
 def unregister():
     '''Unregister all pose thumbnails related things.'''
     bpy.types.DATA_PT_pose_library.remove(pose_thumbnails_draw)
-    # bpy.types.DATA_PT_pose_library.remove(pose_thumbnails_options_draw)
     for pcoll in preview_collections.values():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
-
     del bpy.types.Action.pose_thumbnails
     del bpy.types.Action.pose_mix_factor
