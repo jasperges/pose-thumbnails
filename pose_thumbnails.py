@@ -806,14 +806,6 @@ def register():
     '''Register all pose thumbnail related things.'''
     bpy.types.Action.pose_thumbnails = bpy.props.PointerProperty(
         type=PoselibThumbnailsInfo)
-    bpy.types.Action.pose_mix_factor = bpy.props.FloatProperty(
-        name='Mix Factor',
-        description='The mix factor between the current pose and the new pose',
-        subtype='PERCENTAGE',
-        min=0,
-        max=100,
-        default=100,
-        )
     bpy.types.DATA_PT_pose_library.prepend(pose_thumbnails_draw)
     pcoll = bpy.utils.previews.new()
     pcoll.pose_thumbnails = ()
@@ -827,4 +819,3 @@ def unregister():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
     del bpy.types.Action.pose_thumbnails
-    del bpy.types.Action.pose_mix_factor
