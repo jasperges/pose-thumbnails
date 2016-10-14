@@ -27,10 +27,3 @@ When making thumbnails for your poses, consider the following:
 ## Issues, bugs and suggestions
 
 If you experience an issue or a bug with the addon or have ideas for improvements, please create an issue here on Github.
-
-## Roadmap
-
-Some things I would like to add:
-
-- Make it simple to quickly generate thumbnails. What I have in mind at the moment is that you have to place a camera, choose the destination directory and it will render out all the thumbnails for the poses. Probably you can also add stamps to the thumbnails.
-- Pack the images into the Blend file (I'm not sure about this one yet).
