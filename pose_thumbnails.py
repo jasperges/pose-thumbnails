@@ -244,7 +244,7 @@ def mix_to_pose(pose_a, pose_b, factor):
                     pose_bone[prop] = pose_b_value
     auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
     if auto_insert:
-        bpy.ops.anim.keyframe_insert_menu(type='BUILTIN_KSI_VisualLocRotScale')
+        bpy.ops.anim.keyframe_insert_menu(type='Available')
 
 
 def update_pose(self, context):
