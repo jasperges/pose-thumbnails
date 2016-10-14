@@ -271,6 +271,8 @@ def pose_thumbnails_draw(self, context):
     thumbnail_size = addon_prefs.thumbnail_size * 5
     layout = self.layout
     col = layout.column(align=True)
+    if obj.mode != 'POSE':
+        col.enabled = False
     col.template_icon_view(
         wm.pose_thumbnails,
         'active',
@@ -280,6 +282,13 @@ def pose_thumbnails_draw(self, context):
     row = col.row(align=True)
     row.prop(pose_thumbnail_options, 'show_labels', toggle=True, text='Labels')
     row.prop(pose_thumbnail_options, 'show_all_poses', toggle=True, text='All Poses')
+    if obj.library or obj.data.library or obj.pose_library.library:
+        col.operator(
+            RefreshThumbnails.bl_idname,
+            icon='FILE_REFRESH',
+            text='Refresh',
+            )
+        return
     col.separator()
     box = col.box()
     if pose_thumbnail_options.show_creation_options:
