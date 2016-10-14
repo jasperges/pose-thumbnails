@@ -154,8 +154,15 @@ def get_enum_items(poselib, pcoll):
         if thumbnail:
             image = pcoll.get(thumbnail.filepath)
             if not image:
+                if poselib.library:
+                    thumbnail_path = bpy.path.abspath(
+                        thumbnail.filepath,
+                        library=poselib.library,
+                        )
+                else:
+                    thumbnail_path = thumbnail.filepath
                 image_path = os.path.normpath(
-                    bpy.path.abspath(thumbnail.filepath))
+                    bpy.path.abspath(thumbnail_path))
                 if not os.path.isfile(image_path):
                     image = get_no_thumbnail_image(pcoll)
                 else:
