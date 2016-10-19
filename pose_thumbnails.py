@@ -216,6 +216,35 @@ def get_current_pose():
     return pose
 
 
+def select_all_pose_bones(armature, deselect=False):
+    '''Select all the pose bones of the armature.'''
+    for pose_bone in armature.pose.bones:
+        pose_bone.bone.select = not(deselect)
+
+
+def auto_keyframe():
+    '''Set automatic keyframes (for the current armature).'''
+    auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
+    if not auto_insert:
+        return
+    selected_pose_bones = bpy.context.selected_pose_bones
+    if not selected_pose_bones:
+        select_all_pose_bones(bpy.context.object)
+    scene = bpy.context.scene
+    user_preferences = bpy.context.user_preferences
+    use_active_keying_set = scene.tool_settings.use_keyframe_insert_keyingset
+    only_insert_available = user_preferences.edit.use_keyframe_insert_available
+    active_keying_set = scene.keying_sets_all.active
+    if use_active_keying_set and active_keying_set is not None:
+        bpy.ops.anim.keyframe_insert_menu(type=active_keying_set.bl_idname)
+    elif only_insert_available:
+        bpy.ops.anim.keyframe_insert_menu(type='Available')
+    else:
+        bpy.ops.anim.keyframe_insert_menu(type='WholeCharacterSelected')
+    if not selected_pose_bones:
+        select_all_pose_bones(bpy.context.object, deselect=True)
+
+
 def mix_to_pose(pose_a, pose_b, factor):
     '''Mixes pose_b over pose_a with the given factor.'''
 
@@ -242,9 +271,7 @@ def mix_to_pose(pose_a, pose_b, factor):
                     pose_bone[prop] = pose_a_value
                 else:
                     pose_bone[prop] = pose_b_value
-    auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
-    if auto_insert:
-        bpy.ops.anim.keyframe_insert_menu(type='Available')
+    auto_keyframe()
 
 
 def update_pose(self, context):
