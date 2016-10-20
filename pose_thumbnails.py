@@ -443,10 +443,24 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
     bl_label = 'Add thumbnail'
     bl_options = {'PRESET', 'UNDO'}
 
-    filename_ext = '.jpg;.jpeg;.png'
+    display_type = bpy.props.EnumProperty(
+        items=(('LIST_SHORT', 'Short List', '', 1),
+               ('LIST_LONG', 'Long List', '', 2),
+               ('THUMBNAIL', 'Thumbnail', '', 3)),
+        options={'HIDDEN', 'SKIP_SAVE'},
+        default='THUMBNAIL',
+        )
+    filter_image = bpy.props.BoolProperty(
+        default=True,
+        options={'HIDDEN', 'SKIP_SAVE'},
+        )
+    filter_folder = bpy.props.BoolProperty(
+        default=True,
+        options={'HIDDEN', 'SKIP_SAVE'},
+        )
     filter_glob = bpy.props.StringProperty(
-        default='*.jpg;*.jpeg;*.png',
-        options={'HIDDEN'},
+        default='',
+        options={'HIDDEN', 'SKIP_SAVE'},
         )
 
     use_relative_path = bpy.props.BoolProperty(
@@ -480,7 +494,6 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
     bl_idname = 'poselib.add_thumbnails_from_dir'
     bl_label = 'Add Thumbnails from Directory'
     bl_options = {'PRESET', 'UNDO'}
-
     directory = bpy.props.StringProperty(
         maxlen=1024,
         subtype='DIR_PATH',
@@ -490,10 +503,24 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         type=bpy.types.OperatorFileListElement,
         options={'HIDDEN', 'SKIP_SAVE'},
         )
-    filename_ext = '.jpg;.jpeg;.png'
+    display_type = bpy.props.EnumProperty(
+        items=(('LIST_SHORT', 'Short List', '', 1),
+               ('LIST_LONG', 'Long List', '', 2),
+               ('THUMBNAIL', 'Thumbnail', '', 3)),
+        options={'HIDDEN', 'SKIP_SAVE'},
+        default='THUMBNAIL',
+        )
+    filter_image = bpy.props.BoolProperty(
+        default=True,
+        options={'HIDDEN', 'SKIP_SAVE'},
+        )
+    filter_folder = bpy.props.BoolProperty(
+        default=True,
+        options={'HIDDEN', 'SKIP_SAVE'},
+        )
     filter_glob = bpy.props.StringProperty(
-        default='*.jpg;*.jpeg;*.png',
-        options={'HIDDEN'},
+        default='',
+        options={'HIDDEN', 'SKIP_SAVE'},
         )
     map_method_items = (
             ('NAME', 'Name', 'Match the file names with the pose names.'),
@@ -543,13 +570,13 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         else:
             image_files = files
         for image_file in sorted(image_files):
-            ext = os.path.splitext(image_file)[-1].lower()
-            if ext and ext in self.filename_ext:
-                image_path = os.path.join(directory, image_file)
-                if self.use_relative_path:
-                    image_paths.append(bpy.path.relpath(image_path))
-                else:
-                    image_paths.append(image_path)
+            # ext = os.path.splitext(image_file)[-1].lower()
+            # if ext and ext in self.filename_ext:
+            image_path = os.path.join(directory, image_file)
+            if self.use_relative_path:
+                image_paths.append(bpy.path.relpath(image_path))
+            else:
+                image_paths.append(image_path)
         return image_paths
 
     def create_thumbnail(self, pose, image):
