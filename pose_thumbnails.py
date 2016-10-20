@@ -167,7 +167,7 @@ def get_enum_items(poselib, pcoll):
                     image = get_no_thumbnail_image(pcoll)
                 else:
                     image = pcoll.load(
-                        thumbnail.filepath,
+                        thumbnail_path,
                         image_path,
                         'IMAGE',
                         )
