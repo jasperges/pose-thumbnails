@@ -21,6 +21,19 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 preview_collections = {}
 
+IMAGE_EXTENSIONS = (
+    '.jpeg', '.jpg', '.jpe',
+    '.png',
+    '.tga', '.tpic',
+    '.tiff', '.tif',
+    '.bmp', '.dib',
+    '.cin',
+    '.dpx',
+    '.psd',
+    '.exr',
+    '.hdr', '.pic',
+    )
+
 
 def get_pose_suffix_from_prefs():
     '''Get the pose suffix from the addon preferences.'''
@@ -58,6 +71,12 @@ def get_images_from_dir(directory, sort=True):
         if os.path.splitext(filename)[-1].lower() in image_extensions:
             valid_images.append(filename)
     return sorted(valid_images)
+
+
+def is_image_file(filepath):
+    '''Check if the file is an image file.'''
+    file_extension = os.path.splitext(filepath)[-1]
+    return file_extension.lower() in IMAGE_EXTENSIONS
 
 
 def get_thumbnail_from_pose(pose):
@@ -474,6 +493,11 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
             filepath = self.filepath
         else:
             filepath = bpy.path.relpath(self.filepath)
+        if not is_image_file(filepath):
+            self.report({'ERROR_INVALID_INPUT'},
+                        'The selected file is not an image.')
+            logger.error(' File {0} is not an image.'.format(
+                os.path.basename(filepath)))
         poselib = context.object.pose_library
         pose = poselib.pose_markers.active
         pose.name = suffix_pose_name(pose.name)
@@ -567,12 +591,18 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         image_paths = []
         if files and not files[0]:
             image_files = os.listdir(directory)
+            report = False
         else:
             image_files = files
+            report = True
         for image_file in sorted(image_files):
             # ext = os.path.splitext(image_file)[-1].lower()
             # if ext and ext in self.filename_ext:
             image_path = os.path.join(directory, image_file)
+            if not is_image_file(image_path):
+                if not image_file.startswith('.') and report:
+                    logger.warning(' Skipping file {0} because it\'s not an image.'.format(image_file))
+                continue
             if self.use_relative_path:
                 image_paths.append(bpy.path.relpath(image_path))
             else:
