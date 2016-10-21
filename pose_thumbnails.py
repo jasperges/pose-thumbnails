@@ -372,7 +372,7 @@ class MixPose(bpy.types.Operator):
     '''Mix-apply the selected library pose on to the current pose.'''
     bl_idname = 'poselib.mix_pose'
     bl_label = 'Mix the pose with the current pose.'
-    bl_options = {'UNDO'}
+    bl_options = {'UNDO', 'BLOCKING', 'GRAB_CURSOR'}
 
     factor = bpy.props.FloatProperty(
         name='Mix Factor',
