@@ -20,6 +20,7 @@ from bpy_extras.io_utils import ImportHelper
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 preview_collections = {}
+enum_items_cache = {}
 
 IMAGE_EXTENSIONS = (
     '.jpeg', '.jpg', '.jpe',
@@ -195,9 +196,20 @@ def get_enum_items(poselib, pcoll):
         else:
             image = None
         if image is not None:
-            enum_items.append((
+            # Warning: There is a known bug with using a callback, Python must
+            # keep a reference to the strings returned or Blender will crash.
+            # That's why we have to 'cache' the items in a dict.
+            pose_frame = enum_items_cache.setdefault(
                 str(pose.frame),
+                str(pose.frame),
+                )
+            pose_name = enum_items_cache.setdefault(
                 clean_pose_name(pose.name),
+                clean_pose_name(pose.name),
+                )
+            enum_items.append((
+                pose_frame,
+                pose_name,
                 '',
                 image.icon_id,
                 i,
