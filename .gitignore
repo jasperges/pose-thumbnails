@@ -56,8 +56,8 @@ docs/_build/
 # PyBuilder
 target/
 
-# docs (at least for now)
-docs
+# Backup and stuff
+archive/
 
 # Release dir
 releases/
