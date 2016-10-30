@@ -165,6 +165,7 @@ def get_placeholder_image(pcoll):
 
 def get_enum_items(poselib, pcoll):
     '''Return the enum items for the thumbnail previews.'''
+    global enum_items_cache
     enum_items = []
     wm = bpy.context.window_manager
     pose_thumbnail_options = wm.pose_thumbnails.options
