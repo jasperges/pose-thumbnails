@@ -682,11 +682,11 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             for i, pose in enumerate(poselib.pose_markers):
                 image = self.get_image_by_number(i + start_number)
                 if image:
-                    self.create_thumbnail(i, pose, image)
+                    self.create_thumbnail(pose, image)
         else:
             image_files = self.image_files
-            for i, (pose, image) in enumerate(zip(poselib.pose_markers, image_files)):
-                self.create_thumbnail(i, pose, image)
+            for pose, image in zip(poselib.pose_markers, image_files):
+                self.create_thumbnail(pose, image)
 
     def match_thumbnails_by_frame(self):
         '''Map the thumbnail images to the frame of the poses.'''
@@ -695,12 +695,12 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             for i, pose in enumerate(poselib.pose_markers):
                 image = self.get_image_by_number(pose.frame)
                 if image:
-                    self.create_thumbnail(i, pose, image)
+                    self.create_thumbnail(pose, image)
         else:
             frame_sorted = sorted(poselib.pose_markers, key=lambda p: p.frame)
             image_files = self.image_files
-            for i, (pose, image) in enumerate(zip(frame_sorted, image_files)):
-                self.create_thumbnail(i, pose, image)
+            for pose, image in zip(frame_sorted, image_files):
+                self.create_thumbnail(pose, image)
 
     def match_thumbnails(self):
         '''Try to match the image files to the poses.'''
