@@ -775,6 +775,7 @@ class RefreshThumbnails(bpy.types.Operator):
         pose_thumbnails = self.poselib.pose_thumbnails
         for i, existing_thumbnail in enumerate(pose_thumbnails):
             if thumbnail == existing_thumbnail:
+                logger.debug('removing thumbnail %r at index %d', thumbnail, i)
                 pose_thumbnails.remove(i)
 
     def remove_unused_thumbnails(self):
