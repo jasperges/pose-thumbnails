@@ -779,14 +779,11 @@ class RefreshThumbnails(bpy.types.Operator):
     def remove_unused_thumbnails(self):
         """Remove unused thumbnails."""
 
-        def get_unused_thumbnails():
-            for thumbnail in self.poselib.pose_thumbnails:
-                if not get_pose_from_thumbnail(thumbnail):
-                    yield thumbnail
-
-        unused_thumbnails = get_unused_thumbnails()
-        for thumbnail in unused_thumbnails:
-            self.remove_thumbnail(thumbnail)
+        thumbs = self.poselib.pose_thumbnails
+        count = len(thumbs)
+        for i, thumbnail in enumerate(reversed(thumbs)):
+            if not get_pose_from_thumbnail(thumbnail):
+                thumbs.remove(count - i - 1)
 
     def remove_double_thumbnails(self):
         """Remove extraneous thumbnails from a pose."""
