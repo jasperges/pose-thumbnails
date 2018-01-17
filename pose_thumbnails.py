@@ -361,6 +361,7 @@ def pose_thumbnails_draw(self, context):
     row.prop(pose_thumbnail_options, 'show_all_poses', toggle=True, text='All Poses')
 
     if obj.pose_library.library:
+        col.label('Not showing creation options for linked pose libraries')
         col.operator(
             RefreshThumbnails.bl_idname,
             icon='FILE_REFRESH',
