@@ -1,4 +1,4 @@
-'''This module does the actual work for the pose thumbnails addon.'''
+"""This module does the actual work for the pose thumbnails addon."""
 
 import os
 import logging
@@ -37,7 +37,7 @@ IMAGE_EXTENSIONS = (
 
 
 def get_pose_suffix_from_prefs():
-    '''Get the pose suffix from the addon preferences.'''
+    """Get the pose suffix from the addon preferences."""
     user_prefs = bpy.context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
     if addon_prefs:
@@ -47,7 +47,7 @@ def get_pose_suffix_from_prefs():
 
 
 def clean_pose_name(pose_name):
-    '''Return the clean pose name, that is without thumbnail suffix.'''
+    """Return the clean pose name, that is without thumbnail suffix."""
     pose_suffix = get_pose_suffix_from_prefs()
     if pose_name.endswith(pose_suffix):
         return pose_name[:-len(pose_suffix)]
@@ -56,7 +56,7 @@ def clean_pose_name(pose_name):
 
 
 def suffix_pose_name(pose_name):
-    '''Return the pose name with the thumbnail suffix.'''
+    """Return the pose name with the thumbnail suffix."""
     pose_suffix = get_pose_suffix_from_prefs()
     if pose_name.endswith(pose_suffix) or not pose_suffix.strip():
         return pose_name
@@ -65,7 +65,7 @@ def suffix_pose_name(pose_name):
 
 
 def get_images_from_dir(directory, sort=True):
-    '''Get all image files in the directory.'''
+    """Get all image files in the directory."""
     valid_images = []
     image_extensions = ['.png', '.jpg', '.jpeg']
     for filename in os.listdir(directory):
@@ -75,20 +75,20 @@ def get_images_from_dir(directory, sort=True):
 
 
 def is_image_file(filepath):
-    '''Check if the file is an image file.'''
+    """Check if the file is an image file."""
     file_extension = os.path.splitext(filepath)[-1]
     return file_extension.lower() in IMAGE_EXTENSIONS
 
 
 def get_thumbnail_from_pose(pose):
-    '''Get the thumbnail that belongs to the pose.
+    """Get the thumbnail that belongs to the pose.
 
     Args:
         pose (pose_marker): a pose in the pose library
 
     Returns:
         thumbnail PropertyGroup
-    '''
+    """
     if pose is None:
         return
     poselib = pose.id_data
@@ -98,14 +98,14 @@ def get_thumbnail_from_pose(pose):
 
 
 def get_pose_from_thumbnail(thumbnail):
-    '''Get the pose that belongs to the thumbnail.
+    """Get the pose that belongs to the thumbnail.
 
     Args:
         thumbnail (PropertyGroup): thumbnail info of a pose
 
     Returns:
         pose_marker
-    '''
+    """
     if thumbnail is None:
         return
     poselib = bpy.context.object.pose_library
@@ -115,14 +115,14 @@ def get_pose_from_thumbnail(thumbnail):
 
 
 def get_pose_index_from_frame(poselib, frame):
-    '''Get the pose index of the pose with the specified frame.'''
+    """Get the pose index of the pose with the specified frame."""
     for i, pose in enumerate(poselib.pose_markers):
         if pose.frame == frame:
             return i
 
 
 def get_no_thumbnail_path():
-    '''Get the path to the 'no thumbnail' image.'''
+    """Get the path to the 'no thumbnail' image."""
     no_thumbnail_path = os.path.join(
         os.path.dirname(__file__),
         'thumbnails',
@@ -132,7 +132,7 @@ def get_no_thumbnail_path():
 
 
 def get_no_thumbnail_image(pcoll):
-    '''Return the 'no thumbnail' preview icon.'''
+    """Return the 'no thumbnail' preview icon."""
     no_thumbnail_path = get_no_thumbnail_path()
     no_thumbnail = pcoll.get('No Thumbnail') or pcoll.load(
         'No Thumbnail',
@@ -143,7 +143,7 @@ def get_no_thumbnail_image(pcoll):
 
 
 def get_placeholder_path():
-    '''Get the path to the placeholder image.'''
+    """Get the path to the placeholder image."""
     placeholder_path = os.path.join(
         os.path.dirname(__file__),
         'thumbnails',
@@ -153,7 +153,7 @@ def get_placeholder_path():
 
 
 def get_placeholder_image(pcoll):
-    '''Return the placeholder preview icon.'''
+    """Return the placeholder preview icon."""
     placeholder_path = get_placeholder_path()
     placeholder = pcoll.get('Placeholder') or pcoll.load(
         'Placeholder',
@@ -164,7 +164,7 @@ def get_placeholder_image(pcoll):
 
 
 def get_enum_items(poselib, pcoll):
-    '''Return the enum items for the thumbnail previews.'''
+    """Return the enum items for the thumbnail previews."""
     logger = logging.getLogger("{}.get_enum_items".format(__name__))
     global enum_items_cache
     enum_items = []
@@ -230,7 +230,7 @@ def get_enum_items(poselib, pcoll):
 
 
 def get_pose_thumbnails(self, context):
-    '''Get the pose thumbnails and add them to the preview collection.'''
+    """Get the pose thumbnails and add them to the preview collection."""
     poselib = context.object.pose_library
     if (context is None or
         not poselib.pose_markers or
@@ -246,7 +246,7 @@ def get_pose_thumbnails(self, context):
 
 
 def get_current_pose():
-    '''Copies all pose bone matrices (matrix_basis) and custom props.'''
+    """Copies all pose bone matrices (matrix_basis) and custom props."""
     armature = bpy.context.object
     pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
     pose = {}
@@ -260,13 +260,13 @@ def get_current_pose():
 
 
 def select_all_pose_bones(armature, deselect=False):
-    '''Select all the pose bones of the armature.'''
+    """Select all the pose bones of the armature."""
     for pose_bone in armature.pose.bones:
         pose_bone.bone.select = not(deselect)
 
 
 def auto_keyframe():
-    '''Set automatic keyframes (for the current armature).'''
+    """Set automatic keyframes (for the current armature)."""
     auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
     if not auto_insert:
         return
@@ -289,7 +289,7 @@ def auto_keyframe():
 
 
 def mix_to_pose(pose_a, pose_b, factor):
-    '''Mixes pose_b over pose_a with the given factor.'''
+    """Mixes pose_b over pose_a with the given factor."""
 
     def linear_mix(orig, new, factor):
         return orig * (1 - factor) + new * factor
@@ -318,7 +318,7 @@ def mix_to_pose(pose_a, pose_b, factor):
 
 
 def update_pose(self, context):
-    '''Callback when the enum property is updated (e.g. the index of the active
+    """Callback when the enum property is updated (e.g. the index of the active
        item is changed).
 
     Args:
@@ -327,7 +327,7 @@ def update_pose(self, context):
 
     Returns:
         None
-    '''
+    """
     pose_frame = int(self.active)
     poselib = context.object.pose_library
     pose_index = get_pose_index_from_frame(poselib, pose_frame)
@@ -335,7 +335,7 @@ def update_pose(self, context):
 
 
 def pose_thumbnails_draw(self, context):
-    '''Draw the thumbnail enum in the Pose Library panel.'''
+    """Draw the thumbnail enum in the Pose Library panel."""
     user_prefs = context.user_preferences
     addon_prefs = user_prefs.addons[__package__].preferences
     wm = context.window_manager
@@ -348,6 +348,7 @@ def pose_thumbnails_draw(self, context):
     thumbnail_size = addon_prefs.thumbnail_size * 5
     layout = self.layout
     col = layout.column(align=True)
+
     if obj.mode != 'POSE':
         col.enabled = False
     col.template_icon_view(
@@ -381,6 +382,7 @@ def pose_thumbnails_draw(self, context):
     if pose_thumbnail_options.show_creation_options:
         sub_col = box.column(align=True)
         if not poselib.pose_markers.active:
+            logger.debug('No active pose markers, aborting')
             return
         thumbnail = get_thumbnail_from_pose(poselib.pose_markers.active)
         if thumbnail and thumbnail.filepath != get_no_thumbnail_path():
@@ -412,7 +414,7 @@ def pose_thumbnails_draw(self, context):
 
 
 class MixPose(bpy.types.Operator):
-    '''Mix-apply the selected library pose on to the current pose.'''
+    """Mix-apply the selected library pose on to the current pose."""
     bl_idname = 'poselib.mix_pose'
     bl_label = 'Mix the pose with the current pose.'
     bl_options = {'UNDO', 'BLOCKING', 'GRAB_CURSOR'}
@@ -481,7 +483,7 @@ class MixPose(bpy.types.Operator):
 
 
 class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
-    '''Add a thumbnail to a pose.'''
+    """Add a thumbnail to a pose."""
     bl_idname = 'poselib.add_thumbnail'
     bl_label = 'Add thumbnail'
     bl_options = {'PRESET', 'UNDO'}
@@ -538,7 +540,7 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
 
 
 class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
-    '''Add thumbnails from a directory to poses from a pose library.'''
+    """Add thumbnails from a directory to poses from a pose library."""
     bl_idname = 'poselib.add_thumbnails_from_dir'
     bl_label = 'Add Thumbnails from Directory'
     bl_options = {'PRESET', 'UNDO'}
@@ -609,8 +611,9 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         )
 
     def get_images_from_dir(self):
-        '''Get all image files from a directory.'''
+        """Get all image files from a directory."""
         directory = self.directory
+        logger.debug('reading thumbs from %s', directory)
         files = [f.name for f in self.files]
         image_paths = []
         if files and not files[0]:
@@ -634,7 +637,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         return image_paths
 
     def create_thumbnail(self, pose, image):
-        '''Create or update the thumbnail for a pose.'''
+        """Create or update the thumbnail for a pose."""
         if not self.overwrite_existing and get_thumbnail_from_pose(pose):
             return
         poselib = self.poselib
@@ -645,11 +648,11 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         thumbnail.filepath = image
 
     def get_image_by_number(self, number):
-        '''Return a the image file if it contains the number.
+        """Return a the image file if it contains the number.
 
         Check if the filename contains the number. It matches the first number
         found in the filename (starting from the left).
-        '''
+        """
         for image in self.image_files:
             basename = os.path.basename(image)
             match = re.match(r'^.*?([0-9]+)', basename)
@@ -659,7 +662,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
                     return image
 
     def match_thumbnails_by_name(self):
-        '''Assign the thumbnail by trying to match the pose name with a file name.'''
+        """Assign the thumbnail by trying to match the pose name with a file name."""
         poselib = self.poselib
         image_files = self.image_files
         match_map = {os.path.splitext(os.path.basename(f))[0]: f for f in image_files}
@@ -675,7 +678,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
                 self.create_thumbnail(pose, thumbnail_image)
 
     def match_thumbnails_by_index(self):
-        '''Map the thumbnail images to the index of the poses.'''
+        """Map the thumbnail images to the index of the poses."""
         poselib = self.poselib
         if self.match_by_number:
             start_number = self.start_number
@@ -689,7 +692,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
                 self.create_thumbnail(pose, image)
 
     def match_thumbnails_by_frame(self):
-        '''Map the thumbnail images to the frame of the poses.'''
+        """Map the thumbnail images to the frame of the poses."""
         poselib = self.poselib
         if self.match_by_number:
             for i, pose in enumerate(poselib.pose_markers):
@@ -703,7 +706,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
                 self.create_thumbnail(pose, image)
 
     def match_thumbnails(self):
-        '''Try to match the image files to the poses.'''
+        """Try to match the image files to the poses."""
         mapping_method = self.mapping_method
         if mapping_method == 'NAME':
             self.match_thumbnails_by_name()
@@ -739,7 +742,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
 
 
 class RemovePoseThumbnail(bpy.types.Operator):
-    '''Remove a thumbnail from a pose.'''
+    """Remove a thumbnail from a pose."""
     bl_idname = 'poselib.remove_thumbnail'
     bl_label = 'Remove Thumbnail'
     bl_options = {'PRESET', 'UNDO'}
@@ -756,7 +759,7 @@ class RemovePoseThumbnail(bpy.types.Operator):
 
 
 class RemoveAllThumbnails(bpy.types.Operator):
-    '''Remove all thumbnails.'''
+    """Remove all thumbnails."""
     bl_idname = 'poselib.remove_all_thumbnails'
     bl_label = 'Remove All Thumbnails'
     bl_options = {'PRESET', 'UNDO'}
@@ -770,20 +773,20 @@ class RemoveAllThumbnails(bpy.types.Operator):
 
 
 class RefreshThumbnails(bpy.types.Operator):
-    '''Reloads and cleans the thumbnails and poses.'''
+    """Reloads and cleans the thumbnails and poses."""
     bl_idname = 'poselib.refresh_thumbnails'
     bl_label = 'Refresh Thumbnails'
     bl_options = {'PRESET', 'UNDO'}
 
     def remove_thumbnail(self, thumbnail):
-        '''Remove the thumbnail from the poselib thumbnail info.'''
+        """Remove the thumbnail from the poselib thumbnail info."""
         pose_thumbnails = self.poselib.pose_thumbnails
         for i, existing_thumbnail in enumerate(pose_thumbnails):
             if thumbnail == existing_thumbnail:
                 pose_thumbnails.remove(i)
 
     def remove_unused_thumbnails(self):
-        '''Remove unused thumbnails.'''
+        """Remove unused thumbnails."""
 
         def get_unused_thumbnails():
             for thumbnail in self.poselib.pose_thumbnails:
@@ -795,7 +798,7 @@ class RefreshThumbnails(bpy.types.Operator):
             self.remove_thumbnail(thumbnail)
 
     def remove_double_thumbnails(self):
-        '''Remove extraneous thumbnails from a pose.'''
+        """Remove extraneous thumbnails from a pose."""
         thumbnail_map = {}
         for thumbnail in self.poselib.pose_thumbnails:
             if str(thumbnail.frame) not in thumbnail_map:
@@ -807,7 +810,7 @@ class RefreshThumbnails(bpy.types.Operator):
                 self.remove_thumbnail(thumbnail)
 
     def clean_pose_names(self):
-        '''Remove suffixes from poses without a thumbnail.'''
+        """Remove suffixes from poses without a thumbnail."""
         for pose in self.poselib.pose_markers:
             if not get_thumbnail_from_pose(pose):
                 pose.name = clean_pose_name(pose.name)
@@ -825,7 +828,7 @@ class RefreshThumbnails(bpy.types.Operator):
 
 
 class PoselibThumbnail(bpy.types.PropertyGroup):
-    '''A property to hold the thumbnail info for a pose.'''
+    """A property to hold the thumbnail info for a pose."""
     frame = bpy.props.IntProperty(
         name='Pose frame',
         description='The frame of the pose marker.',
@@ -840,7 +843,7 @@ class PoselibThumbnail(bpy.types.PropertyGroup):
 
 
 class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
-    '''A property to hold the option info for the thumbnail UI.'''
+    """A property to hold the option info for the thumbnail UI."""
     show_creation_options = bpy.props.BoolProperty(
         name='Thumbnail Creation',
         description='Show or hide the thumbnail creation options.',
@@ -859,7 +862,7 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
 
 
 class PoselibUiSettings(bpy.types.PropertyGroup):
-    '''A collection property for all the UI related settings.'''
+    """A collection property for all the UI related settings."""
     active = bpy.props.EnumProperty(
         items=get_pose_thumbnails,
         update=update_pose,
@@ -876,7 +879,7 @@ class PoselibUiSettings(bpy.types.PropertyGroup):
 
 
 class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
-    '''Creates a pose thumbnail panel in the 3D View Properties panel'''
+    """Creates a pose thumbnail panel in the 3D View Properties panel"""
     bl_label = "Pose Library"
     bl_idname = "VIEW3D_PT_pose_previews"
     bl_space_type = 'VIEW_3D'
@@ -926,7 +929,7 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
 
 
 def register():
-    '''Register all pose thumbnail related things.'''
+    """Register all pose thumbnail related things."""
     bpy.types.Action.pose_thumbnails = bpy.props.CollectionProperty(
         type=PoselibThumbnail)
     bpy.types.WindowManager.pose_thumbnails = bpy.props.PointerProperty(
@@ -938,7 +941,7 @@ def register():
 
 
 def unregister():
-    '''Unregister all pose thumbnails related things.'''
+    """Unregister all pose thumbnails related things."""
     bpy.types.DATA_PT_pose_library.remove(pose_thumbnails_draw)
     for pcoll in preview_collections.values():
         bpy.utils.previews.remove(pcoll)
