@@ -62,16 +62,6 @@ def suffix_pose_name(pose_name):
         return ''.join((pose_name, pose_suffix))
 
 
-def get_images_from_dir(directory, sort=True):
-    """Get all image files in the directory."""
-    valid_images = []
-    image_extensions = ['.png', '.jpg', '.jpeg']
-    for filename in os.listdir(directory):
-        if os.path.splitext(filename)[-1].lower() in image_extensions:
-            valid_images.append(filename)
-    return sorted(valid_images)
-
-
 def is_image_file(filepath):
     """Check if the file is an image file."""
     file_extension = os.path.splitext(filepath)[-1]
