@@ -359,13 +359,15 @@ def pose_thumbnails_draw(self, context):
     row = col.row(align=True)
     row.prop(pose_thumbnail_options, 'show_labels', toggle=True, text='Labels')
     row.prop(pose_thumbnail_options, 'show_all_poses', toggle=True, text='All Poses')
-    if obj.library or obj.data.library or obj.pose_library.library:
+
+    if obj.pose_library.library:
         col.operator(
             RefreshThumbnails.bl_idname,
             icon='FILE_REFRESH',
             text='Refresh',
             )
         return
+
     col.separator()
     box = col.box()
     if pose_thumbnail_options.show_creation_options:
