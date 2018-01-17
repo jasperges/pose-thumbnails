@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 preview_collections = {}
 enum_items_cache = {}
 
-IMAGE_EXTENSIONS = (
+IMAGE_EXTENSIONS = {
     '.jpeg', '.jpg', '.jpe',
     '.png',
     '.tga', '.tpic',
@@ -31,7 +31,7 @@ IMAGE_EXTENSIONS = (
     '.psd',
     '.exr',
     '.hdr', '.pic',
-    )
+}
 
 
 def get_pose_suffix_from_prefs():
