@@ -793,7 +793,7 @@ class RefreshThumbnails(bpy.types.Operator):
         for thumbnail in self.poselib.pose_thumbnails:
             thumbnail_map[str(thumbnail.frame)].append(thumbnail)
 
-        for frame, thumbnail_list in thumbnail_map.items():
+        for thumbnail_list in thumbnail_map.values():
             for thumbnail in thumbnail_list[:-1]:
                 self.remove_thumbnail(thumbnail)
 
