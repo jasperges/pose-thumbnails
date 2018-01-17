@@ -251,7 +251,7 @@ def get_current_pose():
 def select_all_pose_bones(armature, deselect=False):
     """Select all the pose bones of the armature."""
     for pose_bone in armature.pose.bones:
-        pose_bone.bone.select = not(deselect)
+        pose_bone.bone.select = not deselect
 
 
 def auto_keyframe():
