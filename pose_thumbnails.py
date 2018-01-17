@@ -1,11 +1,10 @@
 """This module does the actual work for the pose thumbnails addon."""
 
-import os
-import logging
-import re
 import difflib
-import copy
-import time
+import logging
+import os
+import re
+
 if 'bpy' in locals():
     import importlib
     if 'prefs' in locals():
