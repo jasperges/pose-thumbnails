@@ -417,7 +417,7 @@ def pose_thumbnails_draw(self, context):
 
 
 class MixPose(bpy.types.Operator):
-    """Mix-apply the selected library pose on to the current pose."""
+    """Mix-apply the selected library pose on to the current pose"""
     bl_idname = 'poselib.mix_pose'
     bl_label = 'Mix the pose with the current pose.'
     bl_options = {'UNDO', 'BLOCKING', 'GRAB_CURSOR'}
@@ -486,7 +486,7 @@ class MixPose(bpy.types.Operator):
 
 
 class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
-    """Add a thumbnail to a pose."""
+    """Add a thumbnail to a pose"""
     bl_idname = 'poselib.add_thumbnail'
     bl_label = 'Add thumbnail'
     bl_options = {'PRESET', 'UNDO'}
@@ -543,7 +543,7 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
 
 
 class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
-    """Add thumbnails from a directory to poses from a pose library."""
+    """Add thumbnails from a directory to poses from a pose library"""
     bl_idname = 'poselib.add_thumbnails_from_dir'
     bl_label = 'Add Thumbnails from Directory'
     bl_options = {'PRESET', 'UNDO'}
@@ -745,7 +745,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
 
 
 class RemovePoseThumbnail(bpy.types.Operator):
-    """Remove a thumbnail from a pose."""
+    """Remove a thumbnail from a pose"""
     bl_idname = 'poselib.remove_thumbnail'
     bl_label = 'Remove Thumbnail'
     bl_options = {'PRESET', 'UNDO'}
@@ -762,7 +762,7 @@ class RemovePoseThumbnail(bpy.types.Operator):
 
 
 class RemoveAllThumbnails(bpy.types.Operator):
-    """Remove all thumbnails."""
+    """Remove all thumbnails"""
     bl_idname = 'poselib.remove_all_thumbnails'
     bl_label = 'Remove All Thumbnails'
     bl_options = {'PRESET', 'UNDO'}
@@ -776,7 +776,7 @@ class RemoveAllThumbnails(bpy.types.Operator):
 
 
 class RefreshThumbnails(bpy.types.Operator):
-    """Reloads and cleans the thumbnails and poses."""
+    """Reloads and cleans the thumbnails and poses"""
     bl_idname = 'poselib.refresh_thumbnails'
     bl_label = 'Refresh Thumbnails'
     bl_options = {'PRESET', 'UNDO'}
@@ -831,7 +831,7 @@ class RefreshThumbnails(bpy.types.Operator):
 
 
 class PoselibThumbnail(bpy.types.PropertyGroup):
-    """A property to hold the thumbnail info for a pose."""
+    """A property to hold the thumbnail info for a pose"""
     frame = bpy.props.IntProperty(
         name='Pose frame',
         description='The frame of the pose marker.',
@@ -846,7 +846,7 @@ class PoselibThumbnail(bpy.types.PropertyGroup):
 
 
 class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
-    """A property to hold the option info for the thumbnail UI."""
+    """A property to hold the option info for the thumbnail UI"""
     show_creation_options = bpy.props.BoolProperty(
         name='Thumbnail Creation',
         description='Show or hide the thumbnail creation options.',
@@ -865,7 +865,7 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
 
 
 class PoselibUiSettings(bpy.types.PropertyGroup):
-    """A collection property for all the UI related settings."""
+    """A collection property for all the UI related settings"""
     active = bpy.props.EnumProperty(
         items=get_pose_thumbnails,
         update=update_pose,
