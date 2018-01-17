@@ -1,5 +1,6 @@
 """This module does the actual work for the pose thumbnails addon."""
 
+import collections
 import difflib
 import logging
 import os
@@ -787,12 +788,10 @@ class RefreshThumbnails(bpy.types.Operator):
 
     def remove_double_thumbnails(self):
         """Remove extraneous thumbnails from a pose."""
-        thumbnail_map = {}
+        thumbnail_map = collections.defaultdict(list)
         for thumbnail in self.poselib.pose_thumbnails:
-            if str(thumbnail.frame) not in thumbnail_map:
-                thumbnail_map[str(thumbnail.frame)] = [thumbnail]
-            else:
-                thumbnail_map[str(thumbnail.frame)].append(thumbnail)
+            thumbnail_map[str(thumbnail.frame)].append(thumbnail)
+
         for frame, thumbnail_list in thumbnail_map.items():
             for thumbnail in thumbnail_list[:-1]:
                 self.remove_thumbnail(thumbnail)
