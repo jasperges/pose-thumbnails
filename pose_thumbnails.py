@@ -17,7 +17,6 @@ import bpy.utils.previews
 from bpy_extras.io_utils import ImportHelper
 
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 preview_collections = {}
 enum_items_cache = {}
