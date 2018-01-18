@@ -427,8 +427,6 @@ class MixPose(bpy.types.Operator):
         if self.just_clicked:
             bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
             return {'FINISHED'}
-        mouse_delta = self.mouse_x - self.mouse_prev_x
-        self.factor = min(100, max(0, mouse_delta))
         mix_factor = self.factor / 100
         mix_to_pose(self.current_pose, self.target_pose, mix_factor)
         return {'FINISHED'}
@@ -436,6 +434,8 @@ class MixPose(bpy.types.Operator):
     def modal(self, context, event):
         if event.type == 'MOUSEMOVE':
             self.mouse_x = event.mouse_x
+            mouse_delta = self.mouse_x - self.mouse_x_ref
+            self.factor = min(100, max(0, mouse_delta))
             self.execute(context)
         elif event.type == 'LEFTMOUSE':
             return {'FINISHED'}
@@ -452,7 +452,8 @@ class MixPose(bpy.types.Operator):
         bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
         self.target_pose = get_current_pose()
         self.mouse_x = event.mouse_x
-        self.mouse_prev_x = event.mouse_prev_x
+        self.mouse_y = event.mouse_y
+        self.mouse_x_ref = event.mouse_prev_x
         self.execute(context)
         wm = context.window_manager
         wm.modal_handler_add(self)
