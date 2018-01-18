@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 preview_collections = {}
 enum_items_cache = {}
 
+character_name_re = re.compile('^[A-Za-z0-9_]+')
+"""Obtains the character name from an object name"""
+pose_library_prefix = 'PLB_'
+
 IMAGE_EXTENSIONS = {
     '.jpeg', '.jpg', '.jpe',
     '.png',
@@ -312,6 +316,68 @@ def update_pose(self, context):
     bpy.ops.poselib.mix_pose('INVOKE_DEFAULT', pose_index=pose_index)
 
 
+def character_name(ob_name: str) -> str:
+    """Determine character name for the given object name."""
+    if not ob_name:
+        return ''
+
+    m = character_name_re.match(ob_name)
+    if not m:
+        return ob_name
+    return m.group(0)
+
+
+def pose_library_name_prefix(ob_name: str) -> str:
+    """Determine the pose library prefix name for the given object name.
+
+    >>> pose_library_name_prefix('Sintel-heavy-haired')
+    'PLB_Sintel'
+    >>> pose_library_name_prefix('spring_blenrig')
+    'PLB_spring_blenrig'
+    >>> pose_library_name_prefix('Spring-blenrig')
+    'PLB_Spring'
+    """
+    char_name = character_name(ob_name)
+    if not char_name:
+        return ''
+    return pose_library_prefix + char_name
+
+
+# Cache for the pose_lib_for_char EnumProperty items.
+pose_libs_for_current_char = []
+
+
+def pose_lib_for_char_items(self, context) -> list:
+    """Dynamic list of items for Object.pose_libs_for_char."""
+
+    if not context or not context.object:
+        return []
+
+    prefix = pose_library_name_prefix(context.object.name)
+    pose_libs_for_current_char[:] = [
+        a for a in bpy.data.actions
+        if a.pose_markers and a.name.startswith(prefix)
+    ]
+    return [
+        (a.name, a.name, 'Pose library', '', idx)
+        for idx, a in enumerate(pose_libs_for_current_char)
+    ]
+
+
+def pose_lib_for_char_get(self) -> int:
+    if not self.pose_library:
+        return -1
+    try:
+        return pose_libs_for_current_char.index(self.pose_library)
+    except ValueError:
+        return -1
+
+
+def pose_lib_for_char_set(self, index):
+    action = pose_libs_for_current_char[index]
+    self.pose_library = action
+
+
 def pose_thumbnails_draw(self, context):
     """Draw the thumbnail enum in the Pose Library panel."""
     if not context.object:
@@ -320,6 +386,8 @@ def pose_thumbnails_draw(self, context):
     layout = self.layout
     col = layout.column(align=True)
 
+    col.prop(context.object, 'pose_lib_for_char',
+             text='Libraries for %s' % character_name(context.object.name))
 
     poselib = context.object.pose_library
     if poselib and poselib.pose_markers:
@@ -970,6 +1038,13 @@ def register():
         max=100,
         description='Mix Factor',
         update=apply_mix_factor,
+    )
+    bpy.types.Object.pose_lib_for_char = bpy.props.EnumProperty(
+        items=pose_lib_for_char_items,
+        name='Pose Libraries',
+        description='Only lists Pose Libraries for the current character, i.e. PLB_{charname}*',
+        get=pose_lib_for_char_get,
+        set=pose_lib_for_char_set,
     )
     bpy.types.Action.pose_thumbnails = bpy.props.CollectionProperty(
         type=PoselibThumbnail)
