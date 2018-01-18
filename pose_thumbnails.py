@@ -416,6 +416,12 @@ class MixPose(bpy.types.Operator):
         description='The index of the pose to mix.',
     )
 
+    mouse_x_ref = 0
+    mouse_x = 0
+    just_clicked = False
+    current_pose = {}
+    target_pose = {}
+
     @classmethod
     def poll(cls, context):
         return (context is not None and
