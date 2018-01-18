@@ -322,10 +322,10 @@ def pose_lib_for_char_items(self, context) -> list:
     if not context or not context.object:
         return []
 
-    prefix = pose_library_name_prefix(context.object.name, context)
+    prefix = pose_library_name_prefix(context.object.name, context).lower()
     pose_libs_for_current_char[:] = [
         a for a in bpy.data.actions
-        if a.pose_markers and a.name.startswith(prefix)
+        if a.pose_markers and a.name.lower().startswith(prefix)
     ]
     return [
         (a.name, a.name, 'Pose library', '', idx)
