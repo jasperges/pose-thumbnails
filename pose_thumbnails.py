@@ -336,9 +336,12 @@ def pose_thumbnails_draw(self, context):
         scale=thumbnail_size,
     )
 
-    if MixPose.is_running:
-        col.prop(context.window_manager, 'pose_mix_factor')
-        col.label('Left-click or press ENTER to apply')
+    if POSELIB_OT_apply_mix_pose.poll(context):
+        container = col.box()
+        row = container.row().split(0.8, align=True)
+        row.prop(context.window_manager, 'pose_mix_factor')
+        row.operator(POSELIB_OT_apply_mix_pose.bl_idname, icon='FILE_TICK')
+        container.label('Left-click or press ENTER to apply')
 
     row = col.row(align=True)
     row.prop(pose_thumbnail_options, 'show_labels')
@@ -406,6 +409,22 @@ def apply_mix_factor(_, context):
     MixPose.is_running.execute(context)
 
 
+class POSELIB_OT_apply_mix_pose(bpy.types.Operator):
+    """Apply the currently mixed-in pose"""
+    bl_idname = 'poselib.apply_mix_pose'
+    bl_label = 'Apply'
+
+    @classmethod
+    def poll(cls, context):
+        return MixPose.poll(context) and MixPose.is_running is not None
+
+    def execute(self, context):
+        if not MixPose.is_running:
+            return
+        MixPose.is_running.apply_and_finish()
+        return {'FINISHED'}
+
+
 class MixPose(bpy.types.Operator):
     """Mix-apply the selected library pose on to the current pose"""
     bl_idname = 'poselib.mix_pose'
@@ -421,11 +440,13 @@ class MixPose(bpy.types.Operator):
         description='The index of the pose to mix.',
     )
 
+    # Default values for instance variables.
     mouse_x_ref = 0
     mouse_x = 0
     just_clicked = False
     current_pose = {}
     target_pose = {}
+    _apply_and_finish = False
 
     @classmethod
     def poll(cls, context):
@@ -434,9 +455,16 @@ class MixPose(bpy.types.Operator):
                 context.object.type == 'ARMATURE' and
                 context.object.mode == 'POSE')
 
-    def _finish(self):
-        """Perform pre-exit cleanup"""
+    def _finish(self, context):
+        """Perform pre-exit cleanup
+        :param context:
+        """
         MixPose.is_running = None
+        context.area.tag_redraw()
+
+    def apply_and_finish(self):
+        """Apply the currently mixed pose and finish running the operator."""
+        self._apply_and_finish = True
 
     def execute(self, context):
         mix_factor = context.window_manager.pose_mix_factor / 100
@@ -445,16 +473,16 @@ class MixPose(bpy.types.Operator):
 
     def modal(self, context, event):
         if ((event.type == 'LEFTMOUSE' and event.value == 'CLICK')
-                or event.type == 'RET'):
+                or event.type == 'RET' or self._apply_and_finish):
             logger.debug('Finishing modal application')
-            self._finish()
+            self._finish(context)
             return {'FINISHED'}
 
         if event.type in {'RIGHTMOUSE', 'ESC'}:
             # "mix" with factor 0 to reset the pose.
             logger.debug('Cancelling modal application')
             mix_to_pose(self.current_pose, self.target_pose, 0.0)
-            self._finish()
+            self._finish(context)
             return {'CANCELLED'}
 
         return {'PASS_THROUGH'}
@@ -463,7 +491,7 @@ class MixPose(bpy.types.Operator):
         if not event.shift:
             logger.debug('Applying pose at 100%')
             bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-            self._finish()
+            self._finish(context)
             return {'FINISHED'}
 
         logger.debug('Running modal')
