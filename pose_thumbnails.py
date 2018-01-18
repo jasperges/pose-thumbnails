@@ -524,7 +524,7 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
     bl_idname = 'poselib.mix_pose'
     bl_label = 'Mix the pose with the current pose.'
 
-    is_running: 'POSELIB_OT_mix_pose' = None
+    is_running = None
     """The instance of the running modal operator, if any."""
 
     pose_index = bpy.props.IntProperty(
