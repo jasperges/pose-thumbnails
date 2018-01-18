@@ -35,34 +35,6 @@ IMAGE_EXTENSIONS = {
 }
 
 
-def get_pose_suffix_from_prefs():
-    """Get the pose suffix from the addon preferences."""
-    user_prefs = bpy.context.user_preferences
-    addon_prefs = user_prefs.addons[__package__].preferences
-    if addon_prefs:
-        return ''.join((' ', addon_prefs.pose_suffix))
-    else:
-        return ''.join((' ', prefs.DEFAULT_POSE_SUFFIX))
-
-
-def clean_pose_name(pose_name):
-    """Return the clean pose name, that is without thumbnail suffix."""
-    pose_suffix = get_pose_suffix_from_prefs()
-    if pose_name.endswith(pose_suffix):
-        return pose_name[:-len(pose_suffix)]
-    else:
-        return pose_name
-
-
-def suffix_pose_name(pose_name):
-    """Return the pose name with the thumbnail suffix."""
-    pose_suffix = get_pose_suffix_from_prefs()
-    if pose_name.endswith(pose_suffix) or not pose_suffix.strip():
-        return pose_name
-    else:
-        return ''.join((pose_name, pose_suffix))
-
-
 def is_image_file(filepath):
     """Check if the file is an image file."""
     file_extension = os.path.splitext(filepath)[-1]
@@ -204,13 +176,9 @@ def get_enum_items(poselib, pcoll):
                 str(pose.frame),
                 str(pose.frame),
             )
-            pose_name = enum_items_cache.setdefault(
-                clean_pose_name(pose.name),
-                clean_pose_name(pose.name),
-            )
             enum_items.append((
                 pose_frame,
-                pose_name,
+                pose.name,
                 '',
                 image.icon_id,
                 i,
@@ -650,7 +618,6 @@ class POSELIB_OT_add_thumbnail(bpy.types.Operator, ImportHelper):
                 os.path.basename(filepath)))
         poselib = context.object.pose_library
         pose = poselib.pose_markers.active
-        pose.name = suffix_pose_name(pose.name)
         thumbnail = (get_thumbnail_from_pose(pose) or
                      poselib.pose_thumbnails.add())
         thumbnail.frame = pose.frame
@@ -767,7 +734,6 @@ class POSELIB_OT_add_thumbnails_from_dir(bpy.types.Operator, ImportHelper):
         if not self.overwrite_existing and get_thumbnail_from_pose(pose):
             return
         poselib = self.poselib
-        pose.name = suffix_pose_name(pose.name)
         thumbnail = (get_thumbnail_from_pose(pose) or
                      poselib.pose_thumbnails.add())
         thumbnail.frame = pose.frame
@@ -794,7 +760,7 @@ class POSELIB_OT_add_thumbnails_from_dir(bpy.types.Operator, ImportHelper):
         match_map = {os.path.splitext(os.path.basename(f))[0]: f for f in image_files}
         for pose in poselib.pose_markers:
             match = difflib.get_close_matches(
-                clean_pose_name(pose.name),
+                pose.name,
                 match_map.keys(),
                 n=1,
                 cutoff=1.0 - self.match_fuzzyness,
@@ -876,7 +842,6 @@ class POSELIB_OT_remove_pose_thumbnail(bpy.types.Operator):
     def execute(self, context):
         poselib = context.object.pose_library
         pose = poselib.pose_markers.active
-        pose.name = clean_pose_name(pose.name)
         for i, thumbnail in enumerate(poselib.pose_thumbnails):
             if pose.frame == thumbnail.frame:
                 poselib.pose_thumbnails.remove(i)
@@ -893,8 +858,6 @@ class POSELIB_OT_remove_all_thumbnails(bpy.types.Operator):
     def execute(self, context):
         poselib = context.object.pose_library
         poselib.pose_thumbnails.clear()
-        for pose in poselib.pose_markers:
-            pose.name = clean_pose_name(pose.name)
         return {'FINISHED'}
 
 
@@ -931,17 +894,8 @@ class POSELIB_OT_refresh_thumbnails(bpy.types.Operator):
             for thumbnail in thumbnail_list[:-1]:
                 self.remove_thumbnail(thumbnail)
 
-    def clean_pose_names(self):
-        """Remove suffixes from poses without a thumbnail."""
-        for pose in self.poselib.pose_markers:
-            if not get_thumbnail_from_pose(pose):
-                pose.name = clean_pose_name(pose.name)
-            else:
-                pose.name = suffix_pose_name(pose.name)
-
     def execute(self, context):
         self.poselib = context.object.pose_library
-        self.clean_pose_names()
         self.remove_unused_thumbnails()
         self.remove_double_thumbnails()
         pcoll = preview_collections['pose_library']
@@ -991,12 +945,6 @@ class PoselibUiSettings(bpy.types.PropertyGroup):
     )
     options = bpy.props.PointerProperty(
         type=PoselibThumbnailsOptions,
-    )
-    suffix = bpy.props.StringProperty(
-        name='Pose Suffix',
-        description=('Add this suffix to the name of a pose when it has a'
-                     ' thumbnail. Leave empty to add nothing.'),
-        default=get_pose_suffix_from_prefs(),
     )
 
 
