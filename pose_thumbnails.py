@@ -414,10 +414,12 @@ def _draw_thumbnails(context, layout, pose_thumbnail_options):
     )
     if POSELIB_OT_apply_mix_pose.poll(context):
         container = layout.box()
-        row = container.row().split(0.8, align=True)
-        row.prop(context.window_manager, 'pose_mix_factor')
-        row.operator(POSELIB_OT_apply_mix_pose.bl_idname, icon='FILE_TICK')
-        container.label('Left-click or press ENTER to apply')
+        split = container.row(align=True).split(0.8, align=True)
+        split.prop(context.window_manager, 'pose_mix_factor')
+        split.operator(POSELIB_OT_apply_mix_pose.bl_idname, icon='FILE_TICK')
+        split = container.row(align=True).split(0.8, align=True)
+        split.label('Left-click/ENTER to apply, Right-click/ESCAPE to cancel')
+        split.operator(POSELIB_OT_cancel_mix_pose.bl_idname, icon='PANEL_CLOSE')
     row = layout.row(align=True)
     row.prop(pose_thumbnail_options, 'show_labels')
     row.prop(pose_thumbnail_options, 'show_all_poses', text='All Poses')
@@ -501,6 +503,22 @@ class POSELIB_OT_apply_mix_pose(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class POSELIB_OT_cancel_mix_pose(bpy.types.Operator):
+    """Cancels the currently mixed-in pose"""
+    bl_idname = 'poselib.cancel_mix_pose'
+    bl_label = 'Cancel'
+
+    @classmethod
+    def poll(cls, context):
+        return POSELIB_OT_mix_pose.poll(context) and POSELIB_OT_mix_pose.is_running is not None
+
+    def execute(self, context):
+        if not POSELIB_OT_mix_pose.is_running:
+            return
+        POSELIB_OT_mix_pose.is_running.cancel_and_finish()
+        return {'FINISHED'}
+
+
 class POSELIB_OT_mix_pose(bpy.types.Operator):
     """Mix-apply the selected library pose on to the current pose"""
     bl_idname = 'poselib.mix_pose'
@@ -522,7 +540,7 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
     just_clicked = False
     current_pose = {}
     target_pose = {}
-    _apply_and_finish = False
+    _target_state = ''
 
     @classmethod
     def poll(cls, context):
@@ -540,7 +558,11 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
 
     def apply_and_finish(self):
         """Apply the currently mixed pose and finish running the operator."""
-        self._apply_and_finish = True
+        self._target_state = 'FINISHED'
+
+    def cancel_and_finish(self):
+        """Revert the currently mixed pose and aborts the operator."""
+        self._target_state = 'CANCELLED'
 
     def execute(self, context):
         mix_factor = context.window_manager.pose_mix_factor / 100
@@ -549,12 +571,12 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
 
     def modal(self, context, event):
         if ((event.type == 'LEFTMOUSE' and event.value == 'CLICK')
-                or event.type == 'RET' or self._apply_and_finish):
+                or event.type == 'RET' or self._target_state == 'FINISHED'):
             logger.debug('Finishing modal application')
             self._finish(context)
             return {'FINISHED'}
 
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
+        if event.type in {'RIGHTMOUSE', 'ESC'} or self._target_state == 'CANCELLED':
             # "mix" with factor 0 to reset the pose.
             logger.debug('Cancelling modal application')
             mix_to_pose(self.current_pose, self.target_pose, 0.0)
