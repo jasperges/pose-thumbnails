@@ -12,13 +12,16 @@ def change_suffix(pose, old_suffix, new_suffix):
 def update_pose_suffixes(self, context):
     """Update the pose suffixes when the user pref is changed."""
     for poselib in bpy.data.actions:
-        if poselib.pose_markers:
-            if poselib.pose_thumbnails.suffix != self.pose_suffix:
-                for pose in poselib.pose_markers:
-                    old_suffix = poselib.pose_thumbnails.suffix
-                    new_suffix = self.pose_suffix
-                    change_suffix(pose, old_suffix, new_suffix)
-                poselib.pose_thumbnails.suffix = self.pose_suffix
+        if not poselib.pose_markers:
+            continue
+        if poselib.pose_thumbnails.suffix == self.pose_suffix:
+            continue
+
+        for pose in poselib.pose_markers:
+            old_suffix = poselib.pose_thumbnails.suffix
+            new_suffix = self.pose_suffix
+            change_suffix(pose, old_suffix, new_suffix)
+        poselib.pose_thumbnails.suffix = self.pose_suffix
 
 
 class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
