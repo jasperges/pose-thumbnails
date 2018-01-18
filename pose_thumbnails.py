@@ -314,50 +314,57 @@ def update_pose(self, context):
 
 def pose_thumbnails_draw(self, context):
     """Draw the thumbnail enum in the Pose Library panel."""
-    user_prefs = context.user_preferences
-    addon_prefs = user_prefs.addons[__package__].preferences
-    wm = context.window_manager
-    obj = context.object
-    poselib = obj.pose_library
-    if poselib is None or not poselib.pose_markers:
+    if not context.object:
         return
-    pose_thumbnail_options = wm.pose_thumbnails.options
-    show_labels = pose_thumbnail_options.show_labels
-    thumbnail_size = addon_prefs.thumbnail_size * 5
+
     layout = self.layout
     col = layout.column(align=True)
 
-    if obj.mode != 'POSE':
-        col.enabled = False
-    col.template_icon_view(
-        wm.pose_thumbnails,
+
+    poselib = context.object.pose_library
+    if poselib and poselib.pose_markers:
+        pose_thumbnail_options = context.window_manager.pose_thumbnails.options
+        _draw_thumbnails(context, col, pose_thumbnail_options)
+        _draw_creation(col, pose_thumbnail_options, poselib)
+
+
+def _draw_thumbnails(context, layout, pose_thumbnail_options):
+    if context.object.mode != 'POSE':
+        layout.enabled = False
+
+    user_prefs = context.user_preferences
+    addon_prefs = user_prefs.addons[__package__].preferences
+    thumbnail_size = addon_prefs.thumbnail_size * 5
+    show_labels = pose_thumbnail_options.show_labels
+
+    layout.template_icon_view(
+        context.window_manager.pose_thumbnails,
         'active',
         show_labels=show_labels,
         scale=thumbnail_size,
     )
-
     if POSELIB_OT_apply_mix_pose.poll(context):
-        container = col.box()
+        container = layout.box()
         row = container.row().split(0.8, align=True)
         row.prop(context.window_manager, 'pose_mix_factor')
         row.operator(POSELIB_OT_apply_mix_pose.bl_idname, icon='FILE_TICK')
         container.label('Left-click or press ENTER to apply')
-
-    row = col.row(align=True)
+    row = layout.row(align=True)
     row.prop(pose_thumbnail_options, 'show_labels')
     row.prop(pose_thumbnail_options, 'show_all_poses', text='All Poses')
 
-    if obj.pose_library.library:
-        col.label('Not showing creation options for linked pose libraries')
-        col.operator(
+
+def _draw_creation(layout, pose_thumbnail_options, poselib):
+    if poselib.library:
+        layout.label('Not showing creation options for linked pose libraries')
+        layout.operator(
             POSELIB_OT_refresh_thumbnails.bl_idname,
             icon='FILE_REFRESH',
             text='Refresh',
         )
         return
-
-    col.separator()
-    box = col.box()
+    layout.separator()
+    box = layout.box()
     if pose_thumbnail_options.show_creation_options:
         expand_icon = 'TRIA_DOWN'
     else:
