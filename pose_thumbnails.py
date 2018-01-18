@@ -336,8 +336,8 @@ def pose_thumbnails_draw(self, context):
         scale=thumbnail_size,
     )
     row = col.row(align=True)
-    row.prop(pose_thumbnail_options, 'show_labels', toggle=True, text='Labels')
-    row.prop(pose_thumbnail_options, 'show_all_poses', toggle=True, text='All Poses')
+    row.prop(pose_thumbnail_options, 'show_labels')
+    row.prop(pose_thumbnail_options, 'show_all_poses', text='All Poses')
 
     if obj.pose_library.library:
         col.label('Not showing creation options for linked pose libraries')
