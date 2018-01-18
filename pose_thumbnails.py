@@ -350,7 +350,7 @@ def pose_thumbnails_draw(self, context):
     if obj.pose_library.library:
         col.label('Not showing creation options for linked pose libraries')
         col.operator(
-            RefreshThumbnails.bl_idname,
+            POSELIB_OT_refresh_thumbnails.bl_idname,
             icon='FILE_REFRESH',
             text='Refresh',
         )
@@ -379,24 +379,24 @@ def pose_thumbnails_draw(self, context):
         else:
             text = 'Add'
         row = sub_col.row(align=True)
-        row.operator(AddPoseThumbnail.bl_idname, text=text)
-        row.operator(AddPoseThumbnailsFromDir.bl_idname, text='Batch Add/Change')
+        row.operator(POSELIB_OT_add_thumbnail.bl_idname, text=text)
+        row.operator(POSELIB_OT_add_thumbnails_from_dir.bl_idname, text='Batch Add/Change')
         row = sub_col.row(align=True)
         row_col = row.column(align=True)
-        row_col.operator(RemovePoseThumbnail.bl_idname, text='Remove')
+        row_col.operator(POSELIB_OT_remove_pose_thumbnail.bl_idname, text='Remove')
         if get_thumbnail_from_pose(poselib.pose_markers.active):
             row_col.enabled = True
         else:
             row_col.enabled = False
         row_col = row.column(align=True)
-        row_col.operator(RemoveAllThumbnails.bl_idname, text='Remove All')
+        row_col.operator(POSELIB_OT_remove_all_thumbnails.bl_idname, text='Remove All')
         if poselib.pose_thumbnails:
             row_col.enabled = True
         else:
             row_col.enabled = False
         sub_col.separator()
         sub_col.operator(
-            RefreshThumbnails.bl_idname,
+            POSELIB_OT_refresh_thumbnails.bl_idname,
             icon='FILE_REFRESH',
             text='Refresh',
         )
@@ -404,9 +404,9 @@ def pose_thumbnails_draw(self, context):
 
 def apply_mix_factor(_, context):
     """Apply mix factor from WindowManager property update."""
-    if not MixPose.is_running:
+    if not POSELIB_OT_mix_pose.is_running:
         return
-    MixPose.is_running.execute(context)
+    POSELIB_OT_mix_pose.is_running.execute(context)
 
 
 class POSELIB_OT_apply_mix_pose(bpy.types.Operator):
@@ -416,21 +416,21 @@ class POSELIB_OT_apply_mix_pose(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return MixPose.poll(context) and MixPose.is_running is not None
+        return POSELIB_OT_mix_pose.poll(context) and POSELIB_OT_mix_pose.is_running is not None
 
     def execute(self, context):
-        if not MixPose.is_running:
+        if not POSELIB_OT_mix_pose.is_running:
             return
-        MixPose.is_running.apply_and_finish()
+        POSELIB_OT_mix_pose.is_running.apply_and_finish()
         return {'FINISHED'}
 
 
-class MixPose(bpy.types.Operator):
+class POSELIB_OT_mix_pose(bpy.types.Operator):
     """Mix-apply the selected library pose on to the current pose"""
     bl_idname = 'poselib.mix_pose'
     bl_label = 'Mix the pose with the current pose.'
 
-    is_running: 'MixPose' = None
+    is_running: 'POSELIB_OT_mix_pose' = None
     """The instance of the running modal operator, if any."""
 
     pose_index = bpy.props.IntProperty(
@@ -459,7 +459,7 @@ class MixPose(bpy.types.Operator):
         """Perform pre-exit cleanup
         :param context:
         """
-        MixPose.is_running = None
+        POSELIB_OT_mix_pose.is_running = None
         context.area.tag_redraw()
 
     def apply_and_finish(self):
@@ -495,7 +495,7 @@ class MixPose(bpy.types.Operator):
             return {'FINISHED'}
 
         logger.debug('Running modal')
-        MixPose.is_running = self
+        POSELIB_OT_mix_pose.is_running = self
         context.window_manager.pose_mix_factor = 0
         self.current_pose = get_current_pose()
         bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
@@ -508,7 +508,7 @@ class MixPose(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
-class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
+class POSELIB_OT_add_thumbnail(bpy.types.Operator, ImportHelper):
     """Add a thumbnail to a pose"""
     bl_idname = 'poselib.add_thumbnail'
     bl_label = 'Add thumbnail'
@@ -565,7 +565,7 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
         col.prop(self, 'use_relative_path')
 
 
-class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
+class POSELIB_OT_add_thumbnails_from_dir(bpy.types.Operator, ImportHelper):
     """Add thumbnails from a directory to poses from a pose library"""
     bl_idname = 'poselib.add_thumbnails_from_dir'
     bl_label = 'Add Thumbnails from Directory'
@@ -769,7 +769,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         col.prop(self, 'use_relative_path')
 
 
-class RemovePoseThumbnail(bpy.types.Operator):
+class POSELIB_OT_remove_pose_thumbnail(bpy.types.Operator):
     """Remove a thumbnail from a pose"""
     bl_idname = 'poselib.remove_thumbnail'
     bl_label = 'Remove Thumbnail'
@@ -786,7 +786,7 @@ class RemovePoseThumbnail(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class RemoveAllThumbnails(bpy.types.Operator):
+class POSELIB_OT_remove_all_thumbnails(bpy.types.Operator):
     """Remove all thumbnails"""
     bl_idname = 'poselib.remove_all_thumbnails'
     bl_label = 'Remove All Thumbnails'
@@ -800,7 +800,7 @@ class RemoveAllThumbnails(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class RefreshThumbnails(bpy.types.Operator):
+class POSELIB_OT_refresh_thumbnails(bpy.types.Operator):
     """Reloads and cleans the thumbnails and poses"""
     bl_idname = 'poselib.refresh_thumbnails'
     bl_label = 'Refresh Thumbnails'
@@ -902,10 +902,10 @@ class PoselibUiSettings(bpy.types.PropertyGroup):
     )
 
 
-class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
+class POSELIB_PT_pose_previews(bpy.types.Panel):
     """Creates a pose thumbnail panel in the 3D View Properties panel"""
     bl_label = "Pose Library"
-    bl_idname = "VIEW3D_PT_pose_previews"
+    bl_idname = "POSELIB_PT_pose_previews"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = "data"
