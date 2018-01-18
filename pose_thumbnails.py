@@ -8,6 +8,7 @@ import re
 
 if 'bpy' in locals():
     import importlib
+
     if 'prefs' in locals():
         importlib.reload(prefs)
 else:
@@ -15,7 +16,6 @@ else:
 import bpy
 import bpy.utils.previews
 from bpy_extras.io_utils import ImportHelper
-
 
 logger = logging.getLogger(__name__)
 preview_collections = {}
@@ -116,7 +116,7 @@ def get_no_thumbnail_path():
         os.path.dirname(__file__),
         'thumbnails',
         'no_thumbnail.png',
-        )
+    )
     return no_thumbnail_path
 
 
@@ -127,7 +127,7 @@ def get_no_thumbnail_image(pcoll):
         'No Thumbnail',
         no_thumbnail_path,
         'IMAGE',
-        )
+    )
     return no_thumbnail
 
 
@@ -137,7 +137,7 @@ def get_placeholder_path():
         os.path.dirname(__file__),
         'thumbnails',
         'placeholder.png',
-        )
+    )
     return placeholder_path
 
 
@@ -148,7 +148,7 @@ def get_placeholder_image(pcoll):
         'Placeholder',
         placeholder_path,
         'IMAGE',
-        )
+    )
     return placeholder
 
 
@@ -171,14 +171,14 @@ def get_enum_items(poselib, pcoll):
                     bpy.path.abspath(
                         thumbnail.filepath,
                         library=poselib.library,
-                        ))
+                    ))
             if not image:
                 if poselib.library:
                     logger.debug("Thumbnail path: %s", thumbnail.filepath)
                     thumbnail_path = bpy.path.abspath(
                         thumbnail.filepath,
                         library=poselib.library,
-                        )
+                    )
                     logger.debug("Absolute thumbnail path: %s", thumbnail_path)
                 else:
                     thumbnail_path = thumbnail.filepath
@@ -191,7 +191,7 @@ def get_enum_items(poselib, pcoll):
                         thumbnail_path,
                         image_path,
                         'IMAGE',
-                        )
+                    )
         elif show_all_poses:
             image = get_placeholder_image(pcoll)
         else:
@@ -203,18 +203,18 @@ def get_enum_items(poselib, pcoll):
             pose_frame = enum_items_cache.setdefault(
                 str(pose.frame),
                 str(pose.frame),
-                )
+            )
             pose_name = enum_items_cache.setdefault(
                 clean_pose_name(pose.name),
                 clean_pose_name(pose.name),
-                )
+            )
             enum_items.append((
                 pose_frame,
                 pose_name,
                 '',
                 image.icon_id,
                 i,
-                ))
+            ))
     return enum_items
 
 
@@ -222,14 +222,14 @@ def get_pose_thumbnails(self, context):
     """Get the pose thumbnails and add them to the preview collection."""
     poselib = context.object.pose_library
     if (context is None or
-        not poselib.pose_markers or
-        not poselib.pose_thumbnails):
-            return []
+            not poselib.pose_markers or
+            not poselib.pose_thumbnails):
+        return []
     pcoll = preview_collections['pose_library']
     enum_items = get_enum_items(
         poselib,
         pcoll,
-        )
+    )
     pcoll.pose_thumbnails = enum_items
     return pcoll.pose_thumbnails
 
@@ -334,7 +334,7 @@ def pose_thumbnails_draw(self, context):
         'active',
         show_labels=show_labels,
         scale=thumbnail_size,
-        )
+    )
     row = col.row(align=True)
     row.prop(pose_thumbnail_options, 'show_labels', toggle=True, text='Labels')
     row.prop(pose_thumbnail_options, 'show_all_poses', toggle=True, text='All Poses')
@@ -345,7 +345,7 @@ def pose_thumbnails_draw(self, context):
             RefreshThumbnails.bl_idname,
             icon='FILE_REFRESH',
             text='Refresh',
-            )
+        )
         return
 
     col.separator()
@@ -359,7 +359,7 @@ def pose_thumbnails_draw(self, context):
         'show_creation_options',
         icon=expand_icon,
         toggle=True,
-        )
+    )
     if pose_thumbnail_options.show_creation_options:
         sub_col = box.column(align=True)
         if not poselib.pose_markers.active:
@@ -391,7 +391,7 @@ def pose_thumbnails_draw(self, context):
             RefreshThumbnails.bl_idname,
             icon='FILE_REFRESH',
             text='Refresh',
-            )
+        )
 
 
 class MixPose(bpy.types.Operator):
@@ -408,13 +408,13 @@ class MixPose(bpy.types.Operator):
         min=0,
         max=100,
         description='Mix Factor'
-        )
+    )
     pose_index = bpy.props.IntProperty(
         name='Pose Index',
         default=0,
         min=0,
         description='The index of the pose to mix.',
-        )
+    )
 
     @classmethod
     def poll(cls, context):
@@ -475,25 +475,25 @@ class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
                ('THUMBNAIL', 'Thumbnail', '', 3)),
         options={'HIDDEN', 'SKIP_SAVE'},
         default='THUMBNAIL',
-        )
+    )
     filter_image = bpy.props.BoolProperty(
         default=True,
         options={'HIDDEN', 'SKIP_SAVE'},
-        )
+    )
     filter_folder = bpy.props.BoolProperty(
         default=True,
         options={'HIDDEN', 'SKIP_SAVE'},
-        )
+    )
     filter_glob = bpy.props.StringProperty(
         default='',
         options={'HIDDEN', 'SKIP_SAVE'},
-        )
+    )
 
     use_relative_path = bpy.props.BoolProperty(
         name='Relative Path',
         description='Select the file relative to the blend file',
         default=True,
-        )
+    )
 
     def execute(self, context):
         if not self.use_relative_path:
@@ -529,67 +529,68 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
         maxlen=1024,
         subtype='DIR_PATH',
         options={'HIDDEN', 'SKIP_SAVE'},
-        )
+    )
     files = bpy.props.CollectionProperty(
         type=bpy.types.OperatorFileListElement,
         options={'HIDDEN', 'SKIP_SAVE'},
-        )
+    )
     display_type = bpy.props.EnumProperty(
         items=(('LIST_SHORT', 'Short List', '', 1),
                ('LIST_LONG', 'Long List', '', 2),
                ('THUMBNAIL', 'Thumbnail', '', 3)),
         options={'HIDDEN', 'SKIP_SAVE'},
         default='THUMBNAIL',
-        )
+    )
     filter_image = bpy.props.BoolProperty(
         default=True,
         options={'HIDDEN', 'SKIP_SAVE'},
-        )
+    )
     filter_folder = bpy.props.BoolProperty(
         default=True,
         options={'HIDDEN', 'SKIP_SAVE'},
-        )
+    )
     filter_glob = bpy.props.StringProperty(
         default='',
         options={'HIDDEN', 'SKIP_SAVE'},
-        )
+    )
     map_method_items = (
-            ('NAME', 'Name', 'Match the file names with the pose names.'),
-            ('INDEX', 'Index', 'Map the files to the order of the poses (the files are sorted by name, so numbering them makes sense).'),
-            ('FRAME', 'Frame', 'Map the files to the order of the frame number of the poses.'),
-            )
+        ('NAME', 'Name', 'Match the file names with the pose names.'),
+        ('INDEX', 'Index', 'Map the files to the order of the poses (the files are sorted by name, '
+                           'so numbering them makes sense).'),
+        ('FRAME', 'Frame', 'Map the files to the order of the frame number of the poses.'),
+    )
     mapping_method = bpy.props.EnumProperty(
         name='Match by',
         description='Match the thumbnail images to the poses by using this method',
         items=map_method_items,
-        )
+    )
     overwrite_existing = bpy.props.BoolProperty(
         name='Overwrite existing',
         description='Overwrite existing thumbnails of the poses.',
         default=True,
-        )
+    )
     match_fuzzyness = bpy.props.FloatProperty(
         name='Fuzzyness',
         description='Fuzzyness of the matching (0 = exact match, 1 = everything).',
         min=0.0,
         max=1.0,
         default=0.4,
-        )
+    )
     match_by_number = bpy.props.BoolProperty(
         name='Match by number',
         description='If the filenames start with a number, match the number to the pose index/frame.',
         default=False,
-        )
+    )
     start_number = bpy.props.IntProperty(
         name='Start number',
         description='The image number to map to the first pose.',
         default=1,
-        )
+    )
     use_relative_path = bpy.props.BoolProperty(
         name='Relative Path',
         description='Select the file relative to the blend file',
         default=True,
-        )
+    )
 
     def get_images_from_dir(self):
         """Get all image files from a directory."""
@@ -609,7 +610,8 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
             image_path = os.path.join(directory, image_file)
             if not is_image_file(image_path):
                 if not image_file.startswith('.') and report:
-                    logger.warning(' Skipping file {0} because it\'s not an image.'.format(image_file))
+                    logger.warning(
+                        ' Skipping file {0} because it\'s not an image.'.format(image_file))
                 continue
             if self.use_relative_path:
                 image_paths.append(bpy.path.relpath(image_path))
@@ -653,7 +655,7 @@ class AddPoseThumbnailsFromDir(bpy.types.Operator, ImportHelper):
                 match_map.keys(),
                 n=1,
                 cutoff=1.0 - self.match_fuzzyness,
-                )
+            )
             if match:
                 thumbnail_image = match_map[match[0]]
                 self.create_thumbnail(pose, thumbnail_image)
@@ -810,13 +812,13 @@ class PoselibThumbnail(bpy.types.PropertyGroup):
         name='Pose frame',
         description='The frame of the pose marker.',
         default=-1,
-        )
+    )
     filepath = bpy.props.StringProperty(
         name='Thumbnail path',
         description='The file path of the thumbnail image.',
         default='',
         subtype='FILE_PATH',
-        )
+    )
 
 
 class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
@@ -825,17 +827,17 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
         name='Thumbnail Creation',
         description='Show or hide the thumbnail creation options.',
         default=False,
-        )
+    )
     show_labels = bpy.props.BoolProperty(
         name='Show Labels',
         description='Show the labels (pose names) underneath the thumbnails.',
         default=True,
-        )
+    )
     show_all_poses = bpy.props.BoolProperty(
         name='Show All Poses',
         description='Also show poses that don\'t have a thumbnail.',
         default=False,
-        )
+    )
 
 
 class PoselibUiSettings(bpy.types.PropertyGroup):
@@ -843,16 +845,16 @@ class PoselibUiSettings(bpy.types.PropertyGroup):
     active = bpy.props.EnumProperty(
         items=get_pose_thumbnails,
         update=update_pose,
-        )
+    )
     options = bpy.props.PointerProperty(
         type=PoselibThumbnailsOptions,
-        )
+    )
     suffix = bpy.props.StringProperty(
         name='Pose Suffix',
         description=('Add this suffix to the name of a pose when it has a'
                      ' thumbnail. Leave empty to add nothing.'),
         default=get_pose_suffix_from_prefs(),
-        )
+    )
 
 
 class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
@@ -889,20 +891,20 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
                 'active',
                 show_labels=show_labels,
                 scale=thumbnail_size,
-                )
+            )
             row = col.row(align=True)
             row.prop(
                 pose_thumbnail_options,
                 'show_labels',
                 toggle=True,
                 text='Labels',
-                )
+            )
             row.prop(
                 pose_thumbnail_options,
                 'show_all_poses',
                 toggle=True,
                 text='All Poses',
-                )
+            )
 
 
 def register():
