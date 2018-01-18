@@ -30,9 +30,9 @@ bl_info = {
     'support': 'COMMUNITY',
     'category': 'Animation'}
 
-
 if 'bpy' in locals():
     import importlib
+
     if 'pose_thumbnails' in locals():
         importlib.reload(pose_thumbnails)
 else:
@@ -41,13 +41,13 @@ import bpy
 
 
 def register():
-    '''Register all pose thumbnail related things.'''
+    """Register all pose thumbnail related things."""
     bpy.utils.register_module(__name__)
     pose_thumbnails.register()
 
 
 def unregister():
-    '''Unregister all pose thumbnails related things.'''
+    """Unregister all pose thumbnails related things."""
     bpy.utils.unregister_module(__name__)
     pose_thumbnails.unregister()
 
