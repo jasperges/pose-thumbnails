@@ -335,6 +335,11 @@ def pose_thumbnails_draw(self, context):
         show_labels=show_labels,
         scale=thumbnail_size,
     )
+
+    if MixPose.is_running:
+        col.prop(context.window_manager, 'pose_mix_factor')
+        col.label('Left-click or press ENTER to apply')
+
     row = col.row(align=True)
     row.prop(pose_thumbnail_options, 'show_labels')
     row.prop(pose_thumbnail_options, 'show_all_poses', text='All Poses')
@@ -394,21 +399,21 @@ def pose_thumbnails_draw(self, context):
         )
 
 
+def apply_mix_factor(_, context):
+    """Apply mix factor from WindowManager property update."""
+    if not MixPose.is_running:
+        return
+    MixPose.is_running.execute(context)
+
+
 class MixPose(bpy.types.Operator):
     """Mix-apply the selected library pose on to the current pose"""
     bl_idname = 'poselib.mix_pose'
     bl_label = 'Mix the pose with the current pose.'
-    bl_options = {'UNDO', 'BLOCKING', 'GRAB_CURSOR'}
 
-    factor = bpy.props.FloatProperty(
-        name='Mix Factor',
-        default=100,
-        subtype='PERCENTAGE',
-        unit='NONE',
-        min=0,
-        max=100,
-        description='Mix Factor'
-    )
+    is_running: 'MixPose' = None
+    """The instance of the running modal operator, if any."""
+
     pose_index = bpy.props.IntProperty(
         name='Pose Index',
         default=0,
@@ -429,59 +434,50 @@ class MixPose(bpy.types.Operator):
                 context.object.type == 'ARMATURE' and
                 context.object.mode == 'POSE')
 
-    def _finish(self, context):
-        """Perform post-exit cleanup"""
-        context.area.header_text_set('')
+    def _finish(self):
+        """Perform pre-exit cleanup"""
+        MixPose.is_running = None
 
     def execute(self, context):
-        if self.just_clicked:
-            bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-            self._finish(context)
-            return {'FINISHED'}
-        mix_factor = self.factor / 100
+        mix_factor = context.window_manager.pose_mix_factor / 100
         mix_to_pose(self.current_pose, self.target_pose, mix_factor)
         return {'FINISHED'}
 
     def modal(self, context, event):
-        if event.type == 'MOUSEMOVE':
-            self.mouse_x = event.mouse_x
-            mouse_delta = self.mouse_x - self.mouse_x_ref
-            self.factor = min(100, max(0, mouse_delta))
-            context.area.header_text_set(
-                'Move mouse horizontally to determine mix factor. Factor=%d%%' % self.factor)
-
-            self.execute(context)
-        elif event.type == 'LEFTMOUSE':
-            self._finish(context)
+        if ((event.type == 'LEFTMOUSE' and event.value == 'CLICK')
+                or event.type == 'RET'):
+            logger.debug('Finishing modal application')
+            self._finish()
             return {'FINISHED'}
-        elif event.type in {'RIGHTMOUSE', 'ESC'}:
-            self._finish(context)
+
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            # "mix" with factor 0 to reset the pose.
+            logger.debug('Cancelling modal application')
+            mix_to_pose(self.current_pose, self.target_pose, 0.0)
+            self._finish()
             return {'CANCELLED'}
-        return {'RUNNING_MODAL'}
+
+        return {'PASS_THROUGH'}
 
     def invoke(self, context, event):
         if not event.shift:
-            self.just_clicked = True
-            self.execute(context)
-            self._finish(context)
+            logger.debug('Applying pose at 100%')
+            bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+            self._finish()
             return {'FINISHED'}
 
-        self.just_clicked = False
+        logger.debug('Running modal')
+        MixPose.is_running = self
+        context.window_manager.pose_mix_factor = 0
         self.current_pose = get_current_pose()
         bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-
         self.target_pose = get_current_pose()
-        self.mouse_x = event.mouse_x
-        self.mouse_y = event.mouse_y
-        self.mouse_x_ref = event.mouse_prev_x
         self.execute(context)
+
         wm = context.window_manager
         wm.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
 
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, 'factor', text='Mix Factor')
+        return {'RUNNING_MODAL'}
 
 
 class AddPoseThumbnail(bpy.types.Operator, ImportHelper):
@@ -930,6 +926,16 @@ class PoselibThumbnailsPropertiesPanel(bpy.types.Panel):
 
 def register():
     """Register all pose thumbnail related things."""
+    bpy.types.WindowManager.pose_mix_factor = bpy.props.FloatProperty(
+        name='Mix Factor',
+        default=100,
+        subtype='PERCENTAGE',
+        unit='NONE',
+        min=0,
+        max=100,
+        description='Mix Factor',
+        update=apply_mix_factor,
+    )
     bpy.types.Action.pose_thumbnails = bpy.props.CollectionProperty(
         type=PoselibThumbnail)
     bpy.types.WindowManager.pose_thumbnails = bpy.props.PointerProperty(
@@ -948,3 +954,4 @@ def unregister():
     preview_collections.clear()
     del bpy.types.Action.pose_thumbnails
     del bpy.types.WindowManager.pose_thumbnails
+    del bpy.types.WindowManager.pose_mix_factor
