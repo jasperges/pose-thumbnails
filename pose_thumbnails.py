@@ -21,10 +21,6 @@ logger = logging.getLogger(__name__)
 preview_collections = {}
 enum_items_cache = {}
 
-character_name_re = re.compile('^[A-Za-z0-9_]+')
-"""Obtains the character name from an object name"""
-pose_library_prefix = 'PLB_'
-
 IMAGE_EXTENSIONS = {
     '.jpeg', '.jpg', '.jpe',
     '.png',
@@ -316,10 +312,13 @@ def update_pose(self, context):
     bpy.ops.poselib.mix_pose('INVOKE_DEFAULT', pose_index=pose_index)
 
 
-def character_name(ob_name: str) -> str:
+def character_name(ob_name: str, context) -> str:
     """Determine character name for the given object name."""
     if not ob_name:
         return ''
+
+    addon_prefs = context.user_preferences.addons[__package__].preferences
+    character_name_re = addon_prefs.character_name_re()
 
     m = character_name_re.match(ob_name)
     if not m:
@@ -327,7 +326,7 @@ def character_name(ob_name: str) -> str:
     return m.group(0)
 
 
-def pose_library_name_prefix(ob_name: str) -> str:
+def pose_library_name_prefix(ob_name: str, context) -> str:
     """Determine the pose library prefix name for the given object name.
 
     >>> pose_library_name_prefix('Sintel-heavy-haired')
@@ -337,10 +336,12 @@ def pose_library_name_prefix(ob_name: str) -> str:
     >>> pose_library_name_prefix('Spring-blenrig')
     'PLB_Spring'
     """
-    char_name = character_name(ob_name)
+    char_name = character_name(ob_name, context)
     if not char_name:
         return ''
-    return pose_library_prefix + char_name
+
+    addon_prefs = context.user_preferences.addons[__package__].preferences
+    return addon_prefs.pose_lib_name_prefix + char_name
 
 
 # Cache for the pose_lib_for_char EnumProperty items.
@@ -353,7 +354,7 @@ def pose_lib_for_char_items(self, context) -> list:
     if not context or not context.object:
         return []
 
-    prefix = pose_library_name_prefix(context.object.name)
+    prefix = pose_library_name_prefix(context.object.name, context)
     pose_libs_for_current_char[:] = [
         a for a in bpy.data.actions
         if a.pose_markers and a.name.startswith(prefix)
@@ -387,7 +388,7 @@ def pose_thumbnails_draw(self, context):
     col = layout.column(align=True)
 
     col.prop(context.object, 'pose_lib_for_char',
-             text='Libraries for %s' % character_name(context.object.name))
+             text='Libraries for %s' % character_name(context.object.name, context))
 
     poselib = context.object.pose_library
     if poselib and poselib.pose_markers:
