@@ -234,7 +234,7 @@ def get_pose_thumbnails(self, context):
     return pcoll.pose_thumbnails
 
 
-def get_current_pose():
+def get_current_pose() -> dict:
     """Copies all pose bone matrices (matrix_basis) and custom props."""
     armature = bpy.context.object
     pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
