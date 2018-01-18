@@ -429,9 +429,14 @@ class MixPose(bpy.types.Operator):
                 context.object.type == 'ARMATURE' and
                 context.object.mode == 'POSE')
 
+    def _finish(self, context):
+        """Perform post-exit cleanup"""
+        context.area.header_text_set('')
+
     def execute(self, context):
         if self.just_clicked:
             bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+            self._finish(context)
             return {'FINISHED'}
         mix_factor = self.factor / 100
         mix_to_pose(self.current_pose, self.target_pose, mix_factor)
@@ -442,20 +447,29 @@ class MixPose(bpy.types.Operator):
             self.mouse_x = event.mouse_x
             mouse_delta = self.mouse_x - self.mouse_x_ref
             self.factor = min(100, max(0, mouse_delta))
+            context.area.header_text_set(
+                'Move mouse horizontally to determine mix factor. Factor=%d%%' % self.factor)
+
             self.execute(context)
         elif event.type == 'LEFTMOUSE':
+            self._finish(context)
             return {'FINISHED'}
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            self._finish(context)
             return {'CANCELLED'}
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
         if not event.shift:
             self.just_clicked = True
-            return self.execute(context)
+            self.execute(context)
+            self._finish(context)
+            return {'FINISHED'}
+
         self.just_clicked = False
         self.current_pose = get_current_pose()
         bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+
         self.target_pose = get_current_pose()
         self.mouse_x = event.mouse_x
         self.mouse_y = event.mouse_y
