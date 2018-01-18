@@ -280,25 +280,14 @@ def auto_keyframe():
 def mix_to_pose(pose_a, pose_b, factor):
     """Mixes pose_b over pose_a with the given factor."""
 
-    def linear_mix(orig, new, factor):
-        return orig * (1 - factor) + new * factor
-
     for pose_bone, pose_a_props in pose_a.items():
         for prop, pose_a_value in pose_a_props.items():
             pose_b_value = pose_b[pose_bone][prop]
             if prop == 'matrix_basis':
-                pose_bone.matrix_basis = linear_mix(
-                    pose_a_value,
-                    pose_b_value,
-                    factor,
-                    )
+                pose_bone.matrix_basis = pose_a_value.lerp(pose_b_value, factor)
             else:
                 if isinstance(pose_a_value, float):
-                    pose_bone[prop] = linear_mix(
-                        pose_a_value,
-                        pose_b_value,
-                        factor,
-                        )
+                    pose_bone[prop] = pose_a_value * (1 - factor) + pose_b_value * factor
                 elif factor < 0.5:
                     pose_bone[prop] = pose_a_value
                 else:
