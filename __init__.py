@@ -19,7 +19,7 @@
 
 bl_info = {
     'name': 'Pose Library Thumbnails',
-    'author': 'Jasper van Nieuwenhuizen (jasperge)',
+    'author': 'Jasper van Nieuwenhuizen (jasperge) & Sybren A. Stüvel (dr_sybren)',
     'version': (0, 2, 3),
     'blender': (2, 7, 8),
     'location': 'Properties > Armature > Pose Library',
@@ -28,7 +28,8 @@ bl_info = {
     'wiki_url': 'https://github.com/jasperges/pose_thumbnails/blob/master/README.md',
     'tracker_url': 'https://github.com/jasperges/pose_thumbnails/issues',
     'support': 'COMMUNITY',
-    'category': 'Animation'}
+    'category': 'Animation',
+}
 
 if 'bpy' in locals():
     import importlib
