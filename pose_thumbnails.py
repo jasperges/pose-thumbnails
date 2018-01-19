@@ -126,8 +126,13 @@ def get_placeholder_image(pcoll):
     return placeholder
 
 
-def clear_cached_pose_thumbnails():
-    """Clear the cache of get_enum_items()"""
+def clear_cached_pose_thumbnails(*, full_clear=False):
+    """Clear the cache of get_enum_items().
+
+    :param full_clear: also clear Blender's image cache.
+    """
+    if full_clear:
+        preview_collections['pose_library'].clear()
     get_enum_items.cache_clear()
 
 
@@ -175,7 +180,15 @@ def _load_image(poselib: bpy.types.Action,
     if not os.path.isfile(abspath):
         return get_no_thumbnail_image(pcoll)
 
-    return pcoll.load(abspath, abspath, 'IMAGE')
+    image = pcoll.load(abspath, abspath, 'IMAGE')
+
+    pose_thumbnail_options = bpy.context.window_manager.pose_thumbnails.options
+    if pose_thumbnail_options.flipped:
+        from . import flip
+        flip.pixels(image.image_pixels, *image.image_size)
+        flip.pixels(image.icon_pixels, *image.icon_size)
+
+    return image
 
 
 @cache.pyside_cache('active')
@@ -986,6 +999,10 @@ class PoselibThumbnail(bpy.types.PropertyGroup):
     )
 
 
+def on_flipped_updated(self, context):
+    clear_cached_pose_thumbnails(full_clear=True)
+
+
 class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
     """A property to hold the option info for the thumbnail UI"""
     show_creation_options = bpy.props.BoolProperty(
@@ -1007,6 +1024,7 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
         name='Apply Flipped',
         description='Apply the pose mirrored over the YZ-plane',
         default=False,
+        update=on_flipped_updated,
     )
 
 

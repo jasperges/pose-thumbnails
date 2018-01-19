@@ -1,5 +1,7 @@
 """Pose flipping stuff."""
 
+import typing
+
 # We import 'bpy' to make 'import mathutils' work when running outside
 # of Blender and using the built-as-Python-module version.
 # noinspection PyUnresolvedReferences
@@ -185,6 +187,17 @@ def _round(m44: mathutils.Matrix):
             elif abs(vec[i] + 1) < 0.00001:
                 vec[i] = -1
     return m44
+
+
+def pixels(values: typing.MutableSequence, width: int, height: int):
+    """In-place flips the pixels of an image."""
+
+    start = 0
+    end = width
+    for _ in range(height):
+        values[start:end] = reversed(values[start:end])
+        start = end
+        end += width
 
 
 if __name__ == '__main__':
