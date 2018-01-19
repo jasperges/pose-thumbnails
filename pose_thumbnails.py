@@ -135,7 +135,6 @@ def clear_cached_pose_thumbnails():
 def get_enum_items(poselib: bpy.types.Action,
                    pcoll: bpy.utils.previews.ImagePreviewCollection):
     """Return the enum items for the thumbnail previews."""
-    log = logger.getChild('get_enum_items')
 
     enum_items = []
     wm = bpy.context.window_manager
@@ -144,35 +143,7 @@ def get_enum_items(poselib: bpy.types.Action,
     for i, pose in enumerate(poselib.pose_markers):
         thumbnail = get_thumbnail_from_pose(pose)
         if thumbnail:
-            image = pcoll.get(thumbnail.filepath)
-            # TODO: find a better way to compensate for the filepath mangling
-            #       if the poselib is linked.
-            if image is None and poselib.library:
-                image = pcoll.get(
-                    bpy.path.abspath(
-                        thumbnail.filepath,
-                        library=poselib.library,
-                    ))
-            if not image:
-                if poselib.library:
-                    log.debug("Thumbnail path: %s", thumbnail.filepath)
-                    thumbnail_path = bpy.path.abspath(
-                        thumbnail.filepath,
-                        library=poselib.library,
-                    )
-                    log.debug("Absolute thumbnail path: %s", thumbnail_path)
-                else:
-                    thumbnail_path = thumbnail.filepath
-                image_path = os.path.normpath(
-                    bpy.path.abspath(thumbnail_path))
-                if not os.path.isfile(image_path):
-                    image = get_no_thumbnail_image(pcoll)
-                else:
-                    image = pcoll.load(
-                        thumbnail_path,
-                        image_path,
-                        'IMAGE',
-                    )
+            image = _load_image(poselib, pcoll, thumbnail.filepath)
         elif show_all_poses:
             image = get_placeholder_image(pcoll)
         else:
@@ -188,6 +159,23 @@ def get_enum_items(poselib: bpy.types.Action,
     return enum_items
 
 
+def _load_image(poselib: bpy.types.Action,
+                pcoll: bpy.utils.previews.ImagePreviewCollection,
+                filepath: str):
+    abspath = os.path.normpath(bpy.path.abspath(filepath, library=poselib.library))
+
+    log = logger.getChild('get_enum_items')
+    log.debug("Thumbnail path: %s", filepath)
+    log.debug(" absolute path: %s", abspath)
+
+    image = pcoll.get(abspath)
+    if image is not None:
+        return image
+
+    if not os.path.isfile(abspath):
+        return get_no_thumbnail_image(pcoll)
+
+    return pcoll.load(abspath, abspath, 'IMAGE')
 
 
 @utils.pyside_cache('active')
@@ -199,11 +187,7 @@ def get_pose_thumbnails(self, context):
             not poselib.pose_thumbnails):
         return []
     pcoll = preview_collections['pose_library']
-    enum_items = get_enum_items(
-        poselib,
-        pcoll,
-    )
-    pcoll.pose_thumbnails = enum_items
+    pcoll.pose_thumbnails = get_enum_items(poselib, pcoll)
     return pcoll.pose_thumbnails
 
 
