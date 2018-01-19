@@ -186,7 +186,6 @@ def _load_image(poselib: bpy.types.Action,
     pose_thumbnail_options = bpy.context.window_manager.pose_thumbnails.options
     if pose_thumbnail_options.flipped:
         flip.pixels(image.image_pixels, *image.image_size)
-        flip.pixels(image.icon_pixels, *image.icon_size)
 
     return image
 
