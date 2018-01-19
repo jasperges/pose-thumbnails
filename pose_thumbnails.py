@@ -126,7 +126,7 @@ def get_placeholder_image(pcoll):
 
 def get_enum_items(poselib, pcoll):
     """Return the enum items for the thumbnail previews."""
-    logger = logging.getLogger("{}.get_enum_items".format(__name__))
+    log = logging.getLogger("{}.get_enum_items".format(__name__))
     global enum_items_cache
     enum_items = []
     wm = bpy.context.window_manager
@@ -146,12 +146,12 @@ def get_enum_items(poselib, pcoll):
                     ))
             if not image:
                 if poselib.library:
-                    logger.debug("Thumbnail path: %s", thumbnail.filepath)
+                    log.debug("Thumbnail path: %s", thumbnail.filepath)
                     thumbnail_path = bpy.path.abspath(
                         thumbnail.filepath,
                         library=poselib.library,
                     )
-                    logger.debug("Absolute thumbnail path: %s", thumbnail_path)
+                    log.debug("Absolute thumbnail path: %s", thumbnail_path)
                 else:
                     thumbnail_path = thumbnail.filepath
                 image_path = os.path.normpath(
