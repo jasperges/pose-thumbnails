@@ -13,9 +13,9 @@ if 'bpy' in locals():
 
     if 'prefs' in locals():
         importlib.reload(prefs)
-        utils = importlib.reload(utils)
+        cache = importlib.reload(cache)
 else:
-    from . import prefs, utils
+    from . import prefs, cache
 import bpy
 import bpy.utils.previews
 from bpy_extras.io_utils import ImportHelper
@@ -131,7 +131,7 @@ def clear_cached_pose_thumbnails():
     get_enum_items.cache_clear()
 
 
-@utils.lru_cache_1arg
+@cache.lru_cache_1arg
 def get_enum_items(poselib: bpy.types.Action,
                    pcoll: bpy.utils.previews.ImagePreviewCollection):
     """Return the enum items for the thumbnail previews."""
@@ -178,7 +178,7 @@ def _load_image(poselib: bpy.types.Action,
     return pcoll.load(abspath, abspath, 'IMAGE')
 
 
-@utils.pyside_cache('active')
+@cache.pyside_cache('active')
 def get_pose_thumbnails(self, context):
     """Get the pose thumbnails and add them to the preview collection."""
     poselib = context.object.pose_library
