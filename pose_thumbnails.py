@@ -349,6 +349,7 @@ def pose_library_name_prefix(ob_name: str, context) -> str:
 
 
 # Cache for the pose_lib_for_char EnumProperty items.
+# Also used for mapping from the chosen index to an action.
 pose_libs_for_current_char = []
 
 
