@@ -127,13 +127,8 @@ def get_placeholder_image(pcoll):
     return placeholder
 
 
-def clear_cached_pose_thumbnails(*, full_clear=False):
-    """Clear the cache of get_enum_items().
-
-    :param full_clear: also clear Blender's image cache.
-    """
-    if full_clear:
-        preview_collections['pose_library'].clear()
+def clear_cached_pose_thumbnails():
+    """Clear the cache of get_enum_items()."""
     get_enum_items.cache_clear()
 
 
@@ -995,7 +990,10 @@ class PoselibThumbnail(bpy.types.PropertyGroup):
 
 
 def on_flipped_updated(self, context):
-    clear_cached_pose_thumbnails(full_clear=True)
+    clear_cached_pose_thumbnails()
+
+    for img in preview_collections['pose_library'].values():
+        flip.pixels(img.image_pixels, *img.image_size)
 
 
 class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
