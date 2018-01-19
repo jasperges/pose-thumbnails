@@ -11,15 +11,15 @@ if 'bpy' in locals():
 
     if 'prefs' in locals():
         importlib.reload(prefs)
+        utils = importlib.reload(utils)
 else:
-    from . import prefs
+    from . import prefs, utils
 import bpy
 import bpy.utils.previews
 from bpy_extras.io_utils import ImportHelper
 
 logger = logging.getLogger(__name__)
 preview_collections = {}
-enum_items_cache = {}
 
 IMAGE_EXTENSIONS = {
     '.jpeg', '.jpg', '.jpe',
@@ -127,7 +127,7 @@ def get_placeholder_image(pcoll):
 def get_enum_items(poselib, pcoll):
     """Return the enum items for the thumbnail previews."""
     log = logger.getChild('get_enum_items')
-    global enum_items_cache
+
     enum_items = []
     wm = bpy.context.window_manager
     pose_thumbnail_options = wm.pose_thumbnails.options
@@ -169,15 +169,8 @@ def get_enum_items(poselib, pcoll):
         else:
             image = None
         if image is not None:
-            # Warning: There is a known bug with using a callback, Python must
-            # keep a reference to the strings returned or Blender will crash.
-            # That's why we have to 'cache' the items in a dict.
-            pose_frame = enum_items_cache.setdefault(
-                str(pose.frame),
-                str(pose.frame),
-            )
             enum_items.append((
-                pose_frame,
+                str(pose.frame),
                 pose.name,
                 '',
                 image.icon_id,
@@ -186,6 +179,7 @@ def get_enum_items(poselib, pcoll):
     return enum_items
 
 
+@utils.pyside_cache('active')
 def get_pose_thumbnails(self, context):
     """Get the pose thumbnails and add them to the preview collection."""
     poselib = context.object.pose_library
