@@ -202,18 +202,45 @@ def get_pose_thumbnails(self, context):
     return pcoll.pose_thumbnails
 
 
-def get_current_pose() -> dict:
-    """Copies all pose bone matrices (matrix_basis) and custom props."""
+def get_current_pose(*, flipped=False) -> dict:
+    """Copies all pose bone matrices (matrix_basis) and custom props.
+
+    Returns a dictionary {bone: {'matrix_basis': m44, …}, …}
+    """
+    from . import flip
+
     armature = bpy.context.object
     pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
     pose = {}
-    for pose_bone in pose_bones:
-        pose[pose_bone] = {}
-        pose[pose_bone]['matrix_basis'] = pose_bone.matrix_basis.copy()
-        for key, value in pose_bone.items():
-            if key != '_RNA_UI':
-                pose[pose_bone][key] = value
+
+    def store_bone(pb, mat):
+        pose[pb] = {k: v for k, v in pb.items() if k != '_RNA_UI'}
+        pose[pb]['matrix_basis'] = mat
+
+    # The selected bones are assumed to be the bones that should move,
+    # and not the bones we should obtain the matrix from and flip.
+    for target_pb in pose_bones:
+        if flipped:
+            name = flip.name(target_pb.name)
+            source_pb = armature.pose.bones[name]
+            store_bone(target_pb, flip.matrix(source_pb.matrix_basis))
+        else:
+            store_bone(target_pb, target_pb.matrix_basis.copy())
+
     return pose
+
+
+def flip_selection():
+    """Flip selection, so if bone_L was selected, now bone_R is selected."""
+    from . import flip
+
+    pose_bones = bpy.context.object.pose.bones
+    selections = {
+        flip.name(pb.name): pb.bone.select
+        for pb in pose_bones
+    }
+    for name, select in selections.items():
+        pose_bones[name].bone.select = select
 
 
 def select_all_pose_bones(armature, deselect=False):
@@ -243,6 +270,23 @@ def auto_keyframe():
         bpy.ops.anim.keyframe_insert_menu(type='WholeCharacterSelected')
     if not selected_pose_bones:
         select_all_pose_bones(bpy.context.object, deselect=True)
+
+
+def set_pose(pose_a):
+    """Set the pose, same as mixing with factor=0."""
+
+    log = logger.getChild('set_pose')
+    log.debug('setting pose')
+    log_all = len(pose_a) < 10
+
+    for pose_bone, pose_a_props in pose_a.items():
+        if log_all:
+            log.debug('    - %s', pose_bone.name)
+        for prop, pose_a_value in pose_a_props.items():
+            if prop == 'matrix_basis':
+                pose_bone.matrix_basis = pose_a_value
+            else:
+                pose_bone[prop] = pose_a_value
 
 
 def mix_to_pose(pose_a, pose_b, factor):
@@ -277,7 +321,10 @@ def update_pose(self, context):
     pose_frame = int(self.active)
     poselib = context.object.pose_library
     pose_index = get_pose_index_from_frame(poselib, pose_frame)
-    bpy.ops.poselib.mix_pose('INVOKE_DEFAULT', pose_index=pose_index)
+    pose_thumbnail_options = context.window_manager.pose_thumbnails.options
+
+    bpy.ops.poselib.mix_pose('INVOKE_DEFAULT', pose_index=pose_index,
+                             flipped=pose_thumbnail_options.flipped)
 
 
 def character_name(ob_name: str, context) -> str:
@@ -389,6 +436,7 @@ def _draw_thumbnails(context, layout, pose_thumbnail_options):
         split.label('Left-click/ENTER to apply, Right-click/ESCAPE to cancel')
         split.operator(POSELIB_OT_cancel_mix_pose.bl_idname, icon='PANEL_CLOSE')
     row = layout.row(align=True)
+    row.prop(pose_thumbnail_options, 'flipped')
     row.prop(pose_thumbnail_options, 'show_labels')
     row.prop(pose_thumbnail_options, 'show_all_poses', text='All Poses')
 
@@ -501,6 +549,11 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
         min=0,
         description='The index of the pose to mix.',
     )
+    flipped = bpy.props.BoolProperty(
+        name='Apply Flipped',
+        description='Apply the pose mirrored over the YZ-plane',
+        default=False,
+    )
 
     # Default values for instance variables.
     mouse_x_ref = 0
@@ -554,24 +607,44 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def invoke(self, context, event):
+        self._determine_poses()
         if not event.shift:
             logger.debug('Applying pose at 100%')
-            bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+            set_pose(self.target_pose)
             self._finish(context)
             return {'FINISHED'}
 
         logger.debug('Running modal')
         POSELIB_OT_mix_pose.is_running = self
         context.window_manager.pose_mix_factor = 0
-        self.current_pose = get_current_pose()
-        bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-        self.target_pose = get_current_pose()
-        self.execute(context)
 
         wm = context.window_manager
         wm.modal_handler_add(self)
 
         return {'RUNNING_MODAL'}
+
+    def _determine_poses(self):
+        """Set self.current_pose and self.target_pose.
+
+        These are the two poses we have to mix between.
+        """
+        if self.flipped:
+            self.current_pose = get_current_pose(flipped=False)
+
+            # To get the target pose, we have to look at the opposite bones.
+            flip_selection()
+            orig_nonflipped = get_current_pose(flipped=False)
+            bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+            flip_selection()
+
+            self.target_pose = get_current_pose(flipped=True)
+            set_pose(orig_nonflipped)
+            return
+
+        # Non-flipped is much simpler.
+        self.current_pose = get_current_pose(flipped=False)
+        bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+        self.target_pose = get_current_pose(flipped=False)
 
 
 class POSELIB_OT_add_thumbnail(bpy.types.Operator, ImportHelper):
@@ -933,6 +1006,11 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
     show_all_poses = bpy.props.BoolProperty(
         name='Show All Poses',
         description='Also show poses that don\'t have a thumbnail.',
+        default=False,
+    )
+    flipped = bpy.props.BoolProperty(
+        name='Apply Flipped',
+        description='Apply the pose mirrored over the YZ-plane',
         default=False,
     )
 
