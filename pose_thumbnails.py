@@ -6,6 +6,7 @@ import functools
 import logging
 import os
 import re
+import typing
 
 if 'bpy' in locals():
     import importlib
@@ -42,7 +43,7 @@ def is_image_file(filepath):
     return file_extension.lower() in IMAGE_EXTENSIONS
 
 
-def get_thumbnail_from_pose(pose):
+def get_thumbnail_from_pose(pose: bpy.types.TimelineMarker) -> typing.Optional['PoselibThumbnail']:
     """Get the thumbnail that belongs to the pose.
 
     Args:
@@ -131,7 +132,8 @@ def clear_cached_pose_thumbnails():
 
 
 @utils.lru_cache_1arg
-def get_enum_items(poselib, pcoll):
+def get_enum_items(poselib: bpy.types.Action,
+                   pcoll: bpy.utils.previews.ImagePreviewCollection):
     """Return the enum items for the thumbnail previews."""
     log = logger.getChild('get_enum_items')
 
