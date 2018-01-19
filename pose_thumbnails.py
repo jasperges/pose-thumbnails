@@ -2,7 +2,6 @@
 
 import logging
 import os
-import typing
 
 if 'bpy' in locals():
     import importlib
