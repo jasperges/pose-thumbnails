@@ -8,6 +8,15 @@ def clear_charnamere_cache(self: 'PoseThumbnailsPreferences', context):
     self.character_name_re.cache_clear()
 
 
+def for_addon(context=None) -> 'PoseThumbnailsPreferences':
+    """Return preferences for this add-on.
+
+    If the context is given it is used, defaulting to bpy.context.
+    """
+    context = context or bpy.context
+    return context.user_preferences.addons[__package__].preferences
+
+
 class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
     add_3dview_prop_panel = bpy.props.BoolProperty(

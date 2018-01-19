@@ -253,7 +253,7 @@ def character_name(ob_name: str, context) -> str:
     if not ob_name:
         return ''
 
-    addon_prefs = context.user_preferences.addons[__package__].preferences
+    addon_prefs = prefs.for_addon(context)
     character_name_re = addon_prefs.character_name_re()
 
     m = character_name_re.match(ob_name)
@@ -276,7 +276,7 @@ def pose_library_name_prefix(ob_name: str, context) -> str:
     if not char_name:
         return ''
 
-    addon_prefs = context.user_preferences.addons[__package__].preferences
+    addon_prefs = prefs.for_addon(context)
     return addon_prefs.pose_lib_name_prefix + char_name
 
 
@@ -338,8 +338,7 @@ def draw_thumbnails(context, layout, pose_thumbnail_options):
     if context.object.mode != 'POSE':
         layout.enabled = False
 
-    user_prefs = context.user_preferences
-    addon_prefs = user_prefs.addons[__package__].preferences
+    addon_prefs = prefs.for_addon(context)
     thumbnail_size = addon_prefs.thumbnail_size * 5
     show_labels = pose_thumbnail_options.show_labels
 
@@ -582,15 +581,13 @@ class POSELIB_PT_pose_previews(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        user_prefs = context.user_preferences
-        addon_prefs = user_prefs.addons[__package__].preferences
+        addon_prefs = prefs.for_addon(context)
         obj = context.object
         return (obj and obj.type == 'ARMATURE' and
                 addon_prefs.add_3dview_prop_panel)
 
     def draw(self, context):
-        user_prefs = context.user_preferences
-        addon_prefs = user_prefs.addons[__package__].preferences
+        addon_prefs = prefs.for_addon(context)
         wm = context.window_manager
         obj = context.object
         poselib = obj.pose_library
