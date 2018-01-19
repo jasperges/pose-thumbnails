@@ -14,8 +14,9 @@ if 'bpy' in locals():
     if 'prefs' in locals():
         importlib.reload(prefs)
         cache = importlib.reload(cache)
+        flip = importlib.reload(flip)
 else:
-    from . import prefs, cache
+    from . import prefs, cache, flip
 import bpy
 import bpy.utils.previews
 from bpy_extras.io_utils import ImportHelper
@@ -184,7 +185,6 @@ def _load_image(poselib: bpy.types.Action,
 
     pose_thumbnail_options = bpy.context.window_manager.pose_thumbnails.options
     if pose_thumbnail_options.flipped:
-        from . import flip
         flip.pixels(image.image_pixels, *image.image_size)
         flip.pixels(image.icon_pixels, *image.icon_size)
 
@@ -209,8 +209,6 @@ def get_current_pose(*, flipped=False) -> dict:
 
     Returns a dictionary {bone: {'matrix_basis': m44, …}, …}
     """
-    from . import flip
-
     armature = bpy.context.object
     pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
     pose = {}
@@ -234,8 +232,6 @@ def get_current_pose(*, flipped=False) -> dict:
 
 def flip_selection():
     """Flip selection, so if bone_L was selected, now bone_R is selected."""
-    from . import flip
-
     pose_bones = bpy.context.object.pose.bones
     selections = {
         flip.name(pb.name): pb.bone.select
