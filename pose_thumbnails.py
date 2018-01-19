@@ -2,6 +2,7 @@
 
 import collections
 import difflib
+import functools
 import logging
 import os
 import re
@@ -124,6 +125,12 @@ def get_placeholder_image(pcoll):
     return placeholder
 
 
+def clear_cached_pose_thumbnails():
+    """Clear the cache of get_enum_items()"""
+    get_enum_items.cache_clear()
+
+
+@utils.lru_cache_1arg
 def get_enum_items(poselib, pcoll):
     """Return the enum items for the thumbnail previews."""
     log = logger.getChild('get_enum_items')
@@ -177,6 +184,8 @@ def get_enum_items(poselib, pcoll):
                 i,
             ))
     return enum_items
+
+
 
 
 @utils.pyside_cache('active')
@@ -689,6 +698,7 @@ class POSELIB_OT_add_thumbnail(bpy.types.Operator, ImportHelper):
                      poselib.pose_thumbnails.add())
         thumbnail.frame = pose.frame
         thumbnail.filepath = filepath
+        clear_cached_pose_thumbnails()
         return {'FINISHED'}
 
     def draw(self, context):
@@ -878,6 +888,7 @@ class POSELIB_OT_add_thumbnails_from_dir(bpy.types.Operator, ImportHelper):
         self.poselib = context.object.pose_library
         self.image_files = self.get_images_from_dir()
         self.match_thumbnails()
+        clear_cached_pose_thumbnails()
         return {'FINISHED'}
 
     def draw(self, context):
@@ -909,6 +920,7 @@ class POSELIB_OT_remove_pose_thumbnail(bpy.types.Operator):
     def execute(self, context):
         poselib = context.object.pose_library
         pose = poselib.pose_markers.active
+        clear_cached_pose_thumbnails()
         for i, thumbnail in enumerate(poselib.pose_thumbnails):
             if pose.frame == thumbnail.frame:
                 poselib.pose_thumbnails.remove(i)
@@ -925,6 +937,7 @@ class POSELIB_OT_remove_all_thumbnails(bpy.types.Operator):
     def execute(self, context):
         poselib = context.object.pose_library
         poselib.pose_thumbnails.clear()
+        clear_cached_pose_thumbnails()
         return {'FINISHED'}
 
 
@@ -962,6 +975,7 @@ class POSELIB_OT_refresh_thumbnails(bpy.types.Operator):
                 self.remove_thumbnail(thumbnail)
 
     def execute(self, context):
+        clear_cached_pose_thumbnails()
         self.poselib = context.object.pose_library
         self.remove_unused_thumbnails()
         self.remove_double_thumbnails()

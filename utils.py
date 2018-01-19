@@ -1,3 +1,6 @@
+import functools
+
+
 def pyside_cache(propname):
     """Decorator, stores the result of the decorated callable in Python-managed memory.
 
@@ -15,8 +18,6 @@ def pyside_cache(propname):
         https://www.blender.org/api/blender_python_api_master/bpy.props.html#bpy.props.EnumProperty
         """
 
-        import functools
-
         @functools.wraps(wrapped)
         # We can't use (*args, **kwargs), because EnumProperty explicitly checks
         # for the number of fixed positional arguments.
@@ -28,5 +29,43 @@ def pyside_cache(propname):
             finally:
                 rna_type, rna_info = getattr(self.bl_rna, propname)
                 rna_info['_cached_result'] = result
+
         return wrapper
+
     return decorator
+
+
+def lru_cache_1arg(wrapped):
+    """Decorator, caches return value as long as the 1st arg doesn't change."""
+
+    cached_value = ...
+    cached_arg = ...
+
+    def cache_clear():
+        nonlocal cached_value, cached_arg
+        cached_value = ...
+        cached_arg = ...
+
+    @functools.wraps(wrapped)
+    def wrapper(*args, **kwargs):
+        nonlocal cached_value, cached_arg
+
+        if cached_value is not ... and len(args) and args[0] == cached_arg:
+            return cached_value
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            cache_clear()
+            raise
+
+        if len(args):
+            cached_value = result
+            cached_arg = args[0]
+        else:
+            cache_clear()
+
+        return result
+
+    wrapper.cache_clear = cache_clear
+    return wrapper
