@@ -19,7 +19,7 @@
 
 bl_info = {
     'name': 'Pose Library Thumbnails',
-    'author': 'Jasper van Nieuwenhuizen (jasperge)',
+    'author': 'Jasper van Nieuwenhuizen (jasperge) & Sybren A. Stüvel (dr_sybren)',
     'version': (0, 2, 3),
     'blender': (2, 7, 8),
     'location': 'Properties > Armature > Pose Library',
@@ -28,11 +28,12 @@ bl_info = {
     'wiki_url': 'https://github.com/jasperges/pose_thumbnails/blob/master/README.md',
     'tracker_url': 'https://github.com/jasperges/pose_thumbnails/issues',
     'support': 'COMMUNITY',
-    'category': 'Animation'}
-
+    'category': 'Animation',
+}
 
 if 'bpy' in locals():
     import importlib
+
     if 'pose_thumbnails' in locals():
         importlib.reload(pose_thumbnails)
 else:
@@ -41,13 +42,13 @@ import bpy
 
 
 def register():
-    '''Register all pose thumbnail related things.'''
+    """Register all pose thumbnail related things."""
     bpy.utils.register_module(__name__)
     pose_thumbnails.register()
 
 
 def unregister():
-    '''Unregister all pose thumbnails related things.'''
+    """Unregister all pose thumbnails related things."""
     bpy.utils.unregister_module(__name__)
     pose_thumbnails.unregister()
 
