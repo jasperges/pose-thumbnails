@@ -33,7 +33,7 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
     )
     character_name_regexp = bpy.props.StringProperty(
         name='Character Name Regexp',
-        description='Regular Expression that obtains the character name from the object name',
+        description='Obtains the character name from the object name',
         default='[A-Za-z0-9_]+',
         update=clear_charnamere_cache,
     )
@@ -65,7 +65,10 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
         layout.separator()
         col = layout.box()
         col.label('Character Name and Pose Library recognition:', icon='TRIA_RIGHT')
-        col.prop(self, 'character_name_regexp')
+        row = col.row(align=True)
+        row.prop(self, 'character_name_regexp')
+        row.operator('poselib.help_regexp', icon='HELP', text='')
+
         col = col.column(align=True)
         col.prop(self, 'optional_name_prefix')
         col.prop(self, 'pose_lib_name_prefix')

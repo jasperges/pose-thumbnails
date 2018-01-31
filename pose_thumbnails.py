@@ -623,6 +623,17 @@ class POSELIB_PT_pose_previews(bpy.types.Panel):
             )
 
 
+class POSELIB_OT_help_regexp(bpy.types.Operator):
+    """Open Regular Expression explanation in a webbrowser"""
+    bl_label = 'Help'
+    bl_idname = 'poselib.help_regexp'
+
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab('https://en.wikipedia.org/wiki/Regular_expression')
+        return {'FINISHED'}
+
+
 def register():
     """Register all pose thumbnail related things."""
     bpy.types.WindowManager.pose_mix_factor = bpy.props.FloatProperty(
