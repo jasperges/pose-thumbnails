@@ -265,17 +265,22 @@ def pose_library_name_prefix(ob_name: str, context) -> str:
     """Determine the pose library prefix name for the given object name.
 
     >>> pose_library_name_prefix('Sintel-heavy-haired')
-    'PLB_Sintel'
+    'PLB-Sintel'
     >>> pose_library_name_prefix('spring_blenrig')
-    'PLB_spring_blenrig'
+    'PLB-spring_blenrig'
     >>> pose_library_name_prefix('Spring-blenrig')
-    'PLB_Spring'
+    'PLB-Spring'
+    >>> pose_library_name_prefix('RIG-Spring.high_proxy')
+    'PLB-Spring'
     """
+    addon_prefs = prefs.for_addon(context)
+    if ob_name.startswith(addon_prefs.optional_name_prefix):
+        ob_name = ob_name[len(addon_prefs.optional_name_prefix):]
+
     char_name = character_name(ob_name, context)
     if not char_name:
         return ''
 
-    addon_prefs = prefs.for_addon(context)
     return addon_prefs.pose_lib_name_prefix + char_name
 
 
