@@ -573,7 +573,7 @@ class PoselibUiSettings(bpy.types.PropertyGroup):
 class POSELIB_PT_pose_previews(bpy.types.Panel):
     """Creates a pose thumbnail panel in the 3D View Properties panel"""
     bl_label = "Pose Library"
-    bl_idname = "POSELIB_PT_pose_previews"
+    bl_idname = "poselib.pose_previews"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = "data"
