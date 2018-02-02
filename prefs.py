@@ -33,9 +33,15 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
     )
     character_name_regexp = bpy.props.StringProperty(
         name='Character Name Regexp',
-        description='Regular Expression that obtains the character name from the object name',
+        description='Obtains the character name from the object name',
         default='[A-Za-z0-9_]+',
         update=clear_charnamere_cache,
+    )
+    optional_name_prefix = bpy.props.StringProperty(
+        name='Optional Object Prefix',
+        description='Strip this off the object name before determining the Character Name. '
+                    'Ignored if the object name does not start with this',
+        default='RIG-',
     )
     pose_lib_name_prefix = bpy.props.StringProperty(
         name='Pose Library Name Prefix',
@@ -59,7 +65,12 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
         layout.separator()
         col = layout.box()
         col.label('Character Name and Pose Library recognition:', icon='TRIA_RIGHT')
-        col.prop(self, 'character_name_regexp')
+        row = col.row(align=True)
+        row.prop(self, 'character_name_regexp')
+        row.operator('poselib.help_regexp', icon='HELP', text='')
+
+        col = col.column(align=True)
+        col.prop(self, 'optional_name_prefix')
         col.prop(self, 'pose_lib_name_prefix')
         try:
             re.compile(self.character_name_regexp)
@@ -68,6 +79,6 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
                       icon='ERROR')
         else:
             from . import pose_thumbnails
-            char = 'Alpha_monster-blenrig.001'
+            char = self.optional_name_prefix + 'Alpha_monster-blenrig.001'
             pl = pose_thumbnails.pose_library_name_prefix(char, context)
             col.label('Object %r will use Pose Libraries %r' % (char, pl + '…'))

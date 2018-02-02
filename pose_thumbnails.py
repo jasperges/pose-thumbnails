@@ -160,7 +160,10 @@ def flip_selection():
         for pb in pose_bones
     }
     for name, select in selections.items():
-        pose_bones[name].bone.select = select
+        try:
+            pose_bones[name].bone.select = select
+        except KeyError:
+            pass  # this happens when a bone exists only on one side
 
 
 def select_all_pose_bones(armature, deselect=False):
@@ -265,17 +268,22 @@ def pose_library_name_prefix(ob_name: str, context) -> str:
     """Determine the pose library prefix name for the given object name.
 
     >>> pose_library_name_prefix('Sintel-heavy-haired')
-    'PLB_Sintel'
+    'PLB-Sintel'
     >>> pose_library_name_prefix('spring_blenrig')
-    'PLB_spring_blenrig'
+    'PLB-spring_blenrig'
     >>> pose_library_name_prefix('Spring-blenrig')
-    'PLB_Spring'
+    'PLB-Spring'
+    >>> pose_library_name_prefix('RIG-Spring.high_proxy')
+    'PLB-Spring'
     """
+    addon_prefs = prefs.for_addon(context)
+    if ob_name.startswith(addon_prefs.optional_name_prefix):
+        ob_name = ob_name[len(addon_prefs.optional_name_prefix):]
+
     char_name = character_name(ob_name, context)
     if not char_name:
         return ''
 
-    addon_prefs = prefs.for_addon(context)
     return addon_prefs.pose_lib_name_prefix + char_name
 
 
@@ -573,7 +581,7 @@ class PoselibUiSettings(bpy.types.PropertyGroup):
 class POSELIB_PT_pose_previews(bpy.types.Panel):
     """Creates a pose thumbnail panel in the 3D View Properties panel"""
     bl_label = "Pose Library"
-    bl_idname = "POSELIB_PT_pose_previews"
+    bl_idname = "poselib.pose_previews"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = "data"
@@ -616,6 +624,17 @@ class POSELIB_PT_pose_previews(bpy.types.Panel):
                 toggle=True,
                 text='All Poses',
             )
+
+
+class POSELIB_OT_help_regexp(bpy.types.Operator):
+    """Open Regular Expression explanation in a webbrowser"""
+    bl_label = 'Help'
+    bl_idname = 'poselib.help_regexp'
+
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab('https://en.wikipedia.org/wiki/Regular_expression')
+        return {'FINISHED'}
 
 
 def register():
