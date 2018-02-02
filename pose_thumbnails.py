@@ -160,7 +160,10 @@ def flip_selection():
         for pb in pose_bones
     }
     for name, select in selections.items():
-        pose_bones[name].bone.select = select
+        try:
+            pose_bones[name].bone.select = select
+        except KeyError:
+            pass  # this happens when a bone exists only on one side
 
 
 def select_all_pose_bones(armature, deselect=False):
