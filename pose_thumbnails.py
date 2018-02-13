@@ -342,7 +342,7 @@ def pose_thumbnails_draw(self, context):
 
 
 def draw_thumbnails(context, layout, pose_thumbnail_options):
-    if context.object.mode != 'POSE':
+    if context.workspace.object_mode != 'POSE':
         layout.enabled = False
 
     addon_prefs = prefs.for_addon(context)
@@ -441,7 +441,7 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
         return (context is not None and
                 context.object and
                 context.object.type == 'ARMATURE' and
-                context.object.mode == 'POSE')
+                context.workspace.object_mode == 'POSE')
 
     def _finish(self, context):
         """Perform pre-exit cleanup
