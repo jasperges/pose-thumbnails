@@ -223,7 +223,7 @@ def select_pose_bones(bones: typing.Iterable[bpy.types.PoseBone],
         pose_bone.bone.select = select
 
 
-def auto_keyframe(pose_bones: typing.Iterable[bpy.types.PoseBone]):
+def auto_keyframe(pose_bones: typing.List[bpy.types.PoseBone]):
     """Set automatic keyframes (for the current armature)."""
     auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
     if not auto_insert:
@@ -233,8 +233,10 @@ def auto_keyframe(pose_bones: typing.Iterable[bpy.types.PoseBone]):
     selected_pose_bones = bpy.context.selected_pose_bones
     if not selected_pose_bones:
         select_pose_bones(pose_bones)
-
-    logger.debug('Auto-keying %d bones', len(bpy.context.selected_pose_bones))
+        logger.debug('Auto-keying the passed %d bones', len(pose_bones))
+    else:
+        logger.debug('Auto-keying %d bones (pre-selected), got passed %d bones',
+                     len(bpy.context.selected_pose_bones), len(pose_bones))
 
     scene = bpy.context.scene
     user_preferences = bpy.context.user_preferences
@@ -256,7 +258,7 @@ def auto_keyframe(pose_bones: typing.Iterable[bpy.types.PoseBone]):
         select_pose_bones(pose_bones, select=False)
 
 
-def set_pose(pose_a):
+def set_pose(pose_a, auto_key=True):
     """Set the pose, same as mixing with factor=0."""
 
     log = logger.getChild('set_pose')
@@ -271,10 +273,12 @@ def set_pose(pose_a):
                 pose_bone.matrix_basis = pose_a_value
             else:
                 pose_bone[prop] = pose_a_value
-    auto_keyframe(pose_a.keys())
+
+    if auto_key:
+        auto_keyframe(pose_a.keys())
 
 
-def mix_to_pose(pose_a, pose_b, factor):
+def mix_to_pose(pose_a, pose_b, factor, auto_key=True):
     """Mixes pose_b over pose_a with the given factor."""
 
     for pose_bone, pose_a_props in pose_a.items():
@@ -290,7 +294,8 @@ def mix_to_pose(pose_a, pose_b, factor):
                 else:
                     pose_bone[prop] = pose_b_value
 
-    auto_keyframe(pose_a.keys())
+    if auto_key:
+        auto_keyframe(pose_a.keys())
 
 
 def update_pose(self, context):
@@ -522,21 +527,26 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
         self._target_state = 'CANCELLED'
 
     def execute(self, context):
+        # Prevent creating keyframes while we're still mixing. This is only
+        # done when applying the pose.
+        self._execute(context, auto_key=False)
+
+    def _execute(self, context, auto_key: bool):
         mix_factor = context.window_manager.pose_mix_factor / 100
-        mix_to_pose(self.current_pose, self.target_pose, mix_factor)
+        mix_to_pose(self.current_pose, self.target_pose, mix_factor, auto_key=auto_key)
         return {'FINISHED'}
 
     def modal(self, context, event):
         if ((event.type == 'LEFTMOUSE' and event.value == 'CLICK')
                 or event.type == 'RET' or self._target_state == 'FINISHED'):
             logger.debug('Finishing modal application')
+            self._execute(context, auto_key=True)
             self._finish(context)
             return {'FINISHED'}
 
         if event.type in {'RIGHTMOUSE', 'ESC'} or self._target_state == 'CANCELLED':
-            # "mix" with factor 0 to reset the pose.
             logger.debug('Cancelling modal application')
-            mix_to_pose(self.current_pose, self.target_pose, 0.0)
+            set_pose(self.current_pose, auto_key=False)
             self._finish(context)
             return {'CANCELLED'}
 
@@ -564,23 +574,31 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
 
         These are the two poses we have to mix between.
         """
-        if self.flipped:
+
+        # Temporarily turn off auto-keying. We don't want to create
+        # keyframes here, we just want to inspect the resulting pose.
+        auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
+        try:
+            bpy.context.scene.tool_settings.use_keyframe_insert_auto = False
+            if self.flipped:
+                self.current_pose = get_current_pose(flipped=False)
+
+                # To get the target pose, we have to look at the opposite bones.
+                flip_selection()
+                orig_nonflipped = get_current_pose(flipped=False)
+                bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+                flip_selection()
+
+                self.target_pose = get_current_pose(flipped=True)
+                set_pose(orig_nonflipped)
+                return
+
+            # Non-flipped is much simpler.
             self.current_pose = get_current_pose(flipped=False)
-
-            # To get the target pose, we have to look at the opposite bones.
-            flip_selection()
-            orig_nonflipped = get_current_pose(flipped=False)
             bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-            flip_selection()
-
-            self.target_pose = get_current_pose(flipped=True)
-            set_pose(orig_nonflipped)
-            return
-
-        # Non-flipped is much simpler.
-        self.current_pose = get_current_pose(flipped=False)
-        bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-        self.target_pose = get_current_pose(flipped=False)
+            self.target_pose = get_current_pose(flipped=False)
+        finally:
+            bpy.context.scene.tool_settings.use_keyframe_insert_auto = auto_insert
 
 
 class PoselibThumbnail(bpy.types.PropertyGroup):
