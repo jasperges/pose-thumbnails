@@ -216,10 +216,10 @@ def flip_selection():
             pass  # this happens when a bone exists only on one side
 
 
-def select_all_pose_bones(armature, deselect=False):
+def select_all_pose_bones(armature, select=True):
     """Select all the pose bones of the armature."""
     for pose_bone in armature.pose.bones:
-        pose_bone.bone.select = not deselect
+        pose_bone.bone.select = select
 
 
 def auto_keyframe():
@@ -242,7 +242,7 @@ def auto_keyframe():
     else:
         bpy.ops.anim.keyframe_insert_menu(type='WholeCharacterSelected')
     if not selected_pose_bones:
-        select_all_pose_bones(bpy.context.object, deselect=True)
+        select_all_pose_bones(bpy.context.object, select=False)
 
 
 def set_pose(pose_a):
