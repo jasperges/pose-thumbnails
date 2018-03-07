@@ -2,6 +2,8 @@
 
 import logging
 import os
+import re
+import typing
 
 if 'bpy' in locals():
     import importlib
@@ -19,6 +21,7 @@ import bpy.utils.previews
 
 logger = logging.getLogger(__name__)
 preview_collections = {}
+bone_name_re = re.compile(r'^pose.bones\[([^\]]+)\]')
 
 
 def get_pose_index_from_frame(poselib, frame):
@@ -131,8 +134,13 @@ def get_current_pose(*, flipped=False) -> dict:
 
     Returns a dictionary {bone: {'matrix_basis': m44, …}, …}
     """
-    armature = bpy.context.object
-    pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
+    arm_ob = bpy.context.object
+    if bpy.context.selected_pose_bones:
+        pose_bones = bpy.context.selected_pose_bones
+    else:
+        # Figure out the names of the bones in the pose library,
+        # so that we won't have to iterate over all bones.
+        pose_bones = bones_in_poselib(arm_ob)
     pose = {}
 
     def store_bone(pb, mat):
@@ -154,6 +162,44 @@ def get_current_pose(*, flipped=False) -> dict:
             store_bone(target_pb, target_pb.matrix_basis.copy())
 
     return pose
+
+
+def bones_in_poselib(armature_ob) -> typing.List[bpy.types.PoseBone]:
+    """Determine bones used in current pose library."""
+
+    bone_names = set()
+    logger.debug('Finding actual pose bones in pose lib')
+
+    for fc in armature_ob.pose_library.fcurves:
+        # Strip off the last '.location', '["idprop"]' etc.
+        m = bone_name_re.match(fc.data_path)
+        if not m:
+            continue
+
+        # the 'name' can be an index or a quoted name.
+        bone_name = m.group(1)
+        try:
+            bone_idx = int(bone_name)
+        except ValueError:
+            pass
+        else:
+            bone_names.add(bone_idx)
+            continue
+
+        # Strip the quotes
+        bone_names.add(bone_name[1:-1])
+
+    # From the set of bone names/indices, get the actual pose bones.
+    # Ignore non-existing bones.
+    all_pose_bones = armature_ob.pose.bones
+
+    def has_bone(bone_name_or_idx: typing.Union[int, str]):
+        if isinstance(bone_name_or_idx, int):
+            return len(all_pose_bones) < bone_name_or_idx
+        return bone_name_or_idx in all_pose_bones
+
+    return [all_pose_bones[bone_name] for bone_name in bone_names
+            if has_bone(bone_name)]
 
 
 def flip_selection():
