@@ -164,7 +164,7 @@ def get_current_pose(*, flipped=False) -> dict:
     return pose
 
 
-def bones_in_poselib(armature_ob) -> typing.List[bpy.types.PoseBone]:
+def bones_in_poselib(armature_ob: bpy.types.Object) -> typing.List[bpy.types.PoseBone]:
     """Determine bones used in current pose library."""
 
     bone_names = set()
@@ -216,9 +216,9 @@ def flip_selection():
             pass  # this happens when a bone exists only on one side
 
 
-def select_all_pose_bones(armature, select=True):
+def select_all_pose_bones(armature_ob: bpy.types.Object, select=True):
     """Select all the pose bones of the armature."""
-    for pose_bone in armature.pose.bones:
+    for pose_bone in armature_ob.pose.bones:
         pose_bone.bone.select = select
 
 
