@@ -216,33 +216,44 @@ def flip_selection():
             pass  # this happens when a bone exists only on one side
 
 
-def select_all_pose_bones(armature_ob: bpy.types.Object, select=True):
-    """Select all the pose bones of the armature."""
-    for pose_bone in armature_ob.pose.bones:
+def select_pose_bones(bones: typing.Iterable[bpy.types.PoseBone],
+                      select=True):
+    """Select the given pose bones of the armature."""
+    for pose_bone in bones:
         pose_bone.bone.select = select
 
 
-def auto_keyframe():
+def auto_keyframe(pose_bones: typing.Iterable[bpy.types.PoseBone]):
     """Set automatic keyframes (for the current armature)."""
     auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
     if not auto_insert:
+        logger.debug('Auto-keying disabled')
         return
+
     selected_pose_bones = bpy.context.selected_pose_bones
     if not selected_pose_bones:
-        select_all_pose_bones(bpy.context.object)
+        select_pose_bones(pose_bones)
+
+    logger.debug('Auto-keying %d bones', len(bpy.context.selected_pose_bones))
+
     scene = bpy.context.scene
     user_preferences = bpy.context.user_preferences
     use_active_keying_set = scene.tool_settings.use_keyframe_insert_keyingset
     only_insert_available = user_preferences.edit.use_keyframe_insert_available
+
     active_keying_set = scene.keying_sets_all.active
     if use_active_keying_set and active_keying_set is not None:
+        logger.debug('Auto-keying %r', active_keying_set.bl_idname)
         bpy.ops.anim.keyframe_insert_menu(type=active_keying_set.bl_idname)
     elif only_insert_available:
+        logger.debug("Auto-keying 'Available'")
         bpy.ops.anim.keyframe_insert_menu(type='Available')
     else:
+        logger.debug("Auto-keying 'WholeCharacterSelected'")
         bpy.ops.anim.keyframe_insert_menu(type='WholeCharacterSelected')
+
     if not selected_pose_bones:
-        select_all_pose_bones(bpy.context.object, select=False)
+        select_pose_bones(pose_bones, select=False)
 
 
 def set_pose(pose_a):
@@ -277,7 +288,8 @@ def mix_to_pose(pose_a, pose_b, factor):
                     pose_bone[prop] = pose_a_value
                 else:
                     pose_bone[prop] = pose_b_value
-    auto_keyframe()
+
+    auto_keyframe(pose_a.keys())
 
 
 def update_pose(self, context):
