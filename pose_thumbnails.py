@@ -271,6 +271,7 @@ def set_pose(pose_a):
                 pose_bone.matrix_basis = pose_a_value
             else:
                 pose_bone[prop] = pose_a_value
+    auto_keyframe(pose_a.keys())
 
 
 def mix_to_pose(pose_a, pose_b, factor):
