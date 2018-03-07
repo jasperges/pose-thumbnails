@@ -144,7 +144,11 @@ def get_current_pose(*, flipped=False) -> dict:
     for target_pb in pose_bones:
         if flipped:
             name = flip.name(target_pb.name)
-            source_pb = armature.pose.bones[name]
+            try:
+                source_pb = arm_ob.pose.bones[name]
+            except KeyError:
+                # This bone doesn't have a flipped version, so just ignore it.
+                continue
             store_bone(target_pb, flip.matrix(source_pb.matrix_basis))
         else:
             store_bone(target_pb, target_pb.matrix_basis.copy())
