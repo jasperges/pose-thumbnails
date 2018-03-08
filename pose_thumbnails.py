@@ -645,6 +645,11 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
         description='Apply the pose mirrored over the YZ-plane',
         default=False,
         update=on_flipped_updated,
+        # This option shouldn't be saved, because the on_flipped_update()
+        # dumbly flips the pixels of the images. It assumes that the loaded
+        # images are consistent with this `flipped` property, whereas Blender
+        # will start up with the images loaded as on-disk (i.e. flipped=False).
+        options={'SKIP_SAVE'},
     )
 
 
