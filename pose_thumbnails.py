@@ -134,13 +134,18 @@ def get_current_pose(*, flipped=False) -> dict:
 
     Returns a dictionary {bone: {'matrix_basis': m44, …}, …}
     """
+    log = logger.getChild('get_current_pose')
     arm_ob = bpy.context.object
+
+    # Figure out the names of the bones in the pose library,
+    # so that we won't have to iterate over all bones.
+    bones_in_lib = bones_in_poselib(arm_ob, flipped=flipped)
+
     if bpy.context.selected_pose_bones:
-        pose_bones = bpy.context.selected_pose_bones
+        pose_bones = [pb for pb in bpy.context.selected_pose_bones
+                      if pb in bones_in_lib]
     else:
-        # Figure out the names of the bones in the pose library,
-        # so that we won't have to iterate over all bones.
-        pose_bones = bones_in_poselib(arm_ob)
+        pose_bones = bones_in_lib
     pose = {}
 
     def store_bone(pb, mat):
@@ -164,10 +169,16 @@ def get_current_pose(*, flipped=False) -> dict:
     return pose
 
 
-def bones_in_poselib(armature_ob: bpy.types.Object) -> typing.List[bpy.types.PoseBone]:
-    """Determine bones used in current pose library."""
+def bones_in_poselib(armature_ob: bpy.types.Object, flipped=False) \
+        -> typing.Set[bpy.types.PoseBone]:
+    """Determine bones used in current pose library.
+
+    :param armature_ob:
+    :param flipped: flip the bone names before looking them up.
+    """
 
     bone_names = set()
+    all_pose_bones = armature_ob.pose.bones
     logger.debug('Finding actual pose bones in pose lib')
 
     for fc in armature_ob.pose_library.fcurves:
@@ -181,25 +192,19 @@ def bones_in_poselib(armature_ob: bpy.types.Object) -> typing.List[bpy.types.Pos
         try:
             bone_idx = int(bone_name)
         except ValueError:
-            pass
+            # Not a number, strip the quotes.
+            bone_names.add(bone_name[1:-1])
         else:
-            bone_names.add(bone_idx)
-            continue
+            # It was a number, use it to look up the bone name.
+            bone_names.add(all_pose_bones[bone_idx].name)
 
-        # Strip the quotes
-        bone_names.add(bone_name[1:-1])
+    if flipped:
+        bone_names = [flip.name(name) for name in bone_names]
 
-    # From the set of bone names/indices, get the actual pose bones.
+    # From the set of bone names, get the actual pose bones.
     # Ignore non-existing bones.
-    all_pose_bones = armature_ob.pose.bones
-
-    def has_bone(bone_name_or_idx: typing.Union[int, str]):
-        if isinstance(bone_name_or_idx, int):
-            return len(all_pose_bones) < bone_name_or_idx
-        return bone_name_or_idx in all_pose_bones
-
-    return [all_pose_bones[bone_name] for bone_name in bone_names
-            if has_bone(bone_name)]
+    return {all_pose_bones[bone_name] for bone_name in bone_names
+            if bone_name in all_pose_bones}
 
 
 def flip_selection():
