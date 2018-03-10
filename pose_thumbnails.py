@@ -2,6 +2,8 @@
 
 import logging
 import os
+import re
+import typing
 
 if 'bpy' in locals():
     import importlib
@@ -19,6 +21,7 @@ import bpy.utils.previews
 
 logger = logging.getLogger(__name__)
 preview_collections = {}
+bone_name_re = re.compile(r'^pose.bones\[([^\]]+)\]')
 
 
 def get_pose_index_from_frame(poselib, frame):
@@ -131,8 +134,18 @@ def get_current_pose(*, flipped=False) -> dict:
 
     Returns a dictionary {bone: {'matrix_basis': m44, …}, …}
     """
-    armature = bpy.context.object
-    pose_bones = bpy.context.selected_pose_bones or armature.pose.bones
+    log = logger.getChild('get_current_pose')
+    arm_ob = bpy.context.object
+
+    # Figure out the names of the bones in the pose library,
+    # so that we won't have to iterate over all bones.
+    bones_in_lib = bones_in_poselib(arm_ob, flipped=flipped)
+
+    if bpy.context.selected_pose_bones:
+        pose_bones = [pb for pb in bpy.context.selected_pose_bones
+                      if pb in bones_in_lib]
+    else:
+        pose_bones = bones_in_lib
     pose = {}
 
     def store_bone(pb, mat):
@@ -144,12 +157,54 @@ def get_current_pose(*, flipped=False) -> dict:
     for target_pb in pose_bones:
         if flipped:
             name = flip.name(target_pb.name)
-            source_pb = armature.pose.bones[name]
+            try:
+                source_pb = arm_ob.pose.bones[name]
+            except KeyError:
+                # This bone doesn't have a flipped version, so just ignore it.
+                continue
             store_bone(target_pb, flip.matrix(source_pb.matrix_basis))
         else:
             store_bone(target_pb, target_pb.matrix_basis.copy())
 
     return pose
+
+
+def bones_in_poselib(armature_ob: bpy.types.Object, flipped=False) \
+        -> typing.Set[bpy.types.PoseBone]:
+    """Determine bones used in current pose library.
+
+    :param armature_ob:
+    :param flipped: flip the bone names before looking them up.
+    """
+
+    bone_names = set()
+    all_pose_bones = armature_ob.pose.bones
+    logger.debug('Finding actual pose bones in pose lib')
+
+    for fc in armature_ob.pose_library.fcurves:
+        # Strip off the last '.location', '["idprop"]' etc.
+        m = bone_name_re.match(fc.data_path)
+        if not m:
+            continue
+
+        # the 'name' can be an index or a quoted name.
+        bone_name = m.group(1)
+        try:
+            bone_idx = int(bone_name)
+        except ValueError:
+            # Not a number, strip the quotes.
+            bone_names.add(bone_name[1:-1])
+        else:
+            # It was a number, use it to look up the bone name.
+            bone_names.add(all_pose_bones[bone_idx].name)
+
+    if flipped:
+        bone_names = [flip.name(name) for name in bone_names]
+
+    # From the set of bone names, get the actual pose bones.
+    # Ignore non-existing bones.
+    return {all_pose_bones[bone_name] for bone_name in bone_names
+            if bone_name in all_pose_bones}
 
 
 def flip_selection():
@@ -166,36 +221,49 @@ def flip_selection():
             pass  # this happens when a bone exists only on one side
 
 
-def select_all_pose_bones(armature, deselect=False):
-    """Select all the pose bones of the armature."""
-    for pose_bone in armature.pose.bones:
-        pose_bone.bone.select = not deselect
+def select_pose_bones(bones: typing.Iterable[bpy.types.PoseBone],
+                      select=True):
+    """Select the given pose bones of the armature."""
+    for pose_bone in bones:
+        pose_bone.bone.select = select
 
 
-def auto_keyframe():
+def auto_keyframe(pose_bones: typing.List[bpy.types.PoseBone]):
     """Set automatic keyframes (for the current armature)."""
     auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
     if not auto_insert:
+        logger.debug('Auto-keying disabled')
         return
+
     selected_pose_bones = bpy.context.selected_pose_bones
     if not selected_pose_bones:
-        select_all_pose_bones(bpy.context.object)
+        select_pose_bones(pose_bones)
+        logger.debug('Auto-keying the passed %d bones', len(pose_bones))
+    else:
+        logger.debug('Auto-keying %d bones (pre-selected), got passed %d bones',
+                     len(bpy.context.selected_pose_bones), len(pose_bones))
+
     scene = bpy.context.scene
     user_preferences = bpy.context.user_preferences
     use_active_keying_set = scene.tool_settings.use_keyframe_insert_keyingset
     only_insert_available = user_preferences.edit.use_keyframe_insert_available
+
     active_keying_set = scene.keying_sets_all.active
     if use_active_keying_set and active_keying_set is not None:
+        logger.debug('Auto-keying %r', active_keying_set.bl_idname)
         bpy.ops.anim.keyframe_insert_menu(type=active_keying_set.bl_idname)
     elif only_insert_available:
+        logger.debug("Auto-keying 'Available'")
         bpy.ops.anim.keyframe_insert_menu(type='Available')
     else:
+        logger.debug("Auto-keying 'WholeCharacterSelected'")
         bpy.ops.anim.keyframe_insert_menu(type='WholeCharacterSelected')
+
     if not selected_pose_bones:
-        select_all_pose_bones(bpy.context.object, deselect=True)
+        select_pose_bones(pose_bones, select=False)
 
 
-def set_pose(pose_a):
+def set_pose(pose_a, auto_key=True):
     """Set the pose, same as mixing with factor=0."""
 
     log = logger.getChild('set_pose')
@@ -211,8 +279,11 @@ def set_pose(pose_a):
             else:
                 pose_bone[prop] = pose_a_value
 
+    if auto_key:
+        auto_keyframe(pose_a.keys())
 
-def mix_to_pose(pose_a, pose_b, factor):
+
+def mix_to_pose(pose_a, pose_b, factor, auto_key=True):
     """Mixes pose_b over pose_a with the given factor."""
 
     for pose_bone, pose_a_props in pose_a.items():
@@ -227,7 +298,9 @@ def mix_to_pose(pose_a, pose_b, factor):
                     pose_bone[prop] = pose_a_value
                 else:
                     pose_bone[prop] = pose_b_value
-    auto_keyframe()
+
+    if auto_key:
+        auto_keyframe(pose_a.keys())
 
 
 def update_pose(self, context):
@@ -459,21 +532,26 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
         self._target_state = 'CANCELLED'
 
     def execute(self, context):
+        # Prevent creating keyframes while we're still mixing. This is only
+        # done when applying the pose.
+        self._execute(context, auto_key=False)
+
+    def _execute(self, context, auto_key: bool):
         mix_factor = context.window_manager.pose_mix_factor / 100
-        mix_to_pose(self.current_pose, self.target_pose, mix_factor)
+        mix_to_pose(self.current_pose, self.target_pose, mix_factor, auto_key=auto_key)
         return {'FINISHED'}
 
     def modal(self, context, event):
         if ((event.type == 'LEFTMOUSE' and event.value == 'CLICK')
                 or event.type == 'RET' or self._target_state == 'FINISHED'):
             logger.debug('Finishing modal application')
+            self._execute(context, auto_key=True)
             self._finish(context)
             return {'FINISHED'}
 
         if event.type in {'RIGHTMOUSE', 'ESC'} or self._target_state == 'CANCELLED':
-            # "mix" with factor 0 to reset the pose.
             logger.debug('Cancelling modal application')
-            mix_to_pose(self.current_pose, self.target_pose, 0.0)
+            set_pose(self.current_pose, auto_key=False)
             self._finish(context)
             return {'CANCELLED'}
 
@@ -501,23 +579,31 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
 
         These are the two poses we have to mix between.
         """
-        if self.flipped:
+
+        # Temporarily turn off auto-keying. We don't want to create
+        # keyframes here, we just want to inspect the resulting pose.
+        auto_insert = bpy.context.scene.tool_settings.use_keyframe_insert_auto
+        try:
+            bpy.context.scene.tool_settings.use_keyframe_insert_auto = False
+            if self.flipped:
+                self.current_pose = get_current_pose(flipped=False)
+
+                # To get the target pose, we have to look at the opposite bones.
+                flip_selection()
+                orig_nonflipped = get_current_pose(flipped=False)
+                bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
+                flip_selection()
+
+                self.target_pose = get_current_pose(flipped=True)
+                set_pose(orig_nonflipped)
+                return
+
+            # Non-flipped is much simpler.
             self.current_pose = get_current_pose(flipped=False)
-
-            # To get the target pose, we have to look at the opposite bones.
-            flip_selection()
-            orig_nonflipped = get_current_pose(flipped=False)
             bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-            flip_selection()
-
-            self.target_pose = get_current_pose(flipped=True)
-            set_pose(orig_nonflipped)
-            return
-
-        # Non-flipped is much simpler.
-        self.current_pose = get_current_pose(flipped=False)
-        bpy.ops.poselib.apply_pose(pose_index=self.pose_index)
-        self.target_pose = get_current_pose(flipped=False)
+            self.target_pose = get_current_pose(flipped=False)
+        finally:
+            bpy.context.scene.tool_settings.use_keyframe_insert_auto = auto_insert
 
 
 class PoselibThumbnail(bpy.types.PropertyGroup):
@@ -564,6 +650,11 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
         description='Apply the pose mirrored over the YZ-plane',
         default=False,
         update=on_flipped_updated,
+        # This option shouldn't be saved, because the on_flipped_update()
+        # dumbly flips the pixels of the images. It assumes that the loaded
+        # images are consistent with this `flipped` property, whereas Blender
+        # will start up with the images loaded as on-disk (i.e. flipped=False).
+        options={'SKIP_SAVE'},
     )
 
 
