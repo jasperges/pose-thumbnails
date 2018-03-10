@@ -17,15 +17,18 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+__version__ = '1.0.0'
+
+
 bl_info = {
     'name': 'Pose Library Thumbnails',
     'author': 'Jasper van Nieuwenhuizen (jasperge) & Sybren A. Stüvel (dr_sybren)',
-    'version': (1, 0, 0),
+    'version': tuple(map(int, __version__.split('.'))),
     'blender': (2, 7, 8),
     'location': 'Properties > Armature > Pose Library',
     'description': 'Add thumbnails for the poses of a pose Library',
-    'wiki_url': 'https://github.com/jasperges/pose_thumbnails/blob/master/README.md',
-    'tracker_url': 'https://github.com/jasperges/pose_thumbnails/issues',
+    'wiki_url': 'https://github.com/jasperges/pose-thumbnails/blob/master/README.md',
+    'tracker_url': 'https://github.com/jasperges/pose-thumbnails/issues',
     'support': 'COMMUNITY',
     'category': 'Animation',
 }
