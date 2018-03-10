@@ -404,9 +404,13 @@ def pose_thumbnails_draw(self, context):
     layout = self.layout
     col = layout.column(align=True)
 
-    col.prop(context.object, 'pose_lib_for_char',
-             text='Libraries for %s' % character_name(context.object.name, context))
-
+    col.prop(
+        context.object,
+        'pose_lib_for_char',
+        text='Libraries for {char}'.format(
+            char=character_name(context.object.name, context)),
+    )
+    col.separator()
     poselib = context.object.pose_library
     if poselib and poselib.pose_markers:
         pose_thumbnail_options = context.window_manager.pose_thumbnails.options
@@ -691,30 +695,17 @@ class POSELIB_PT_pose_previews(bpy.types.Panel):
         poselib = obj.pose_library
         layout = self.layout
         col = layout.column(align=True)
-        col.template_ID(obj, "pose_library", unlink="poselib.unlink")
-        if poselib is not None:
+        col.prop(
+            obj,
+            'pose_lib_for_char',
+            text='Libraries for {char}'.format(
+                char=character_name(obj.name, context)),
+        )
+        col.separator()
+        if poselib and poselib.pose_markers:
             pose_thumbnail_options = wm.pose_thumbnails.options
-            show_labels = pose_thumbnail_options.show_labels
-            thumbnail_size = addon_prefs.thumbnail_size * 5
-            col.template_icon_view(
-                wm.pose_thumbnails,
-                'active',
-                show_labels=show_labels,
-                scale=thumbnail_size,
-            )
-            row = col.row(align=True)
-            row.prop(
-                pose_thumbnail_options,
-                'show_labels',
-                toggle=True,
-                text='Labels',
-            )
-            row.prop(
-                pose_thumbnail_options,
-                'show_all_poses',
-                toggle=True,
-                text='All Poses',
-            )
+            draw_thumbnails(context, col, pose_thumbnail_options)
+        col.template_ID(obj, "pose_library", unlink="poselib.unlink")
 
 
 class POSELIB_OT_help_regexp(bpy.types.Operator):
