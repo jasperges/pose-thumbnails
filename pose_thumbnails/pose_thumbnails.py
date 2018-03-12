@@ -497,7 +497,7 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
         name='Pose Index',
         default=0,
         min=0,
-        description='The index of the pose to mix.',
+        description='The index of the pose to mix',
     )
     flipped = bpy.props.BoolProperty(
         name='Apply Flipped',
@@ -614,12 +614,12 @@ class PoselibThumbnail(bpy.types.PropertyGroup):
     """A property to hold the thumbnail info for a pose"""
     frame = bpy.props.IntProperty(
         name='Pose frame',
-        description='The frame of the pose marker.',
+        description='The frame of the pose marker',
         default=-1,
     )
     filepath = bpy.props.StringProperty(
         name='Thumbnail path',
-        description='The file path of the thumbnail image.',
+        description='The file path of the thumbnail image',
         default='',
         subtype='FILE_PATH',
     )
@@ -636,17 +636,17 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
     """A property to hold the option info for the thumbnail UI"""
     show_creation_options = bpy.props.BoolProperty(
         name='Thumbnail Creation',
-        description='Show or hide the thumbnail creation options.',
+        description='Show or hide the thumbnail creation options',
         default=False,
     )
     show_labels = bpy.props.BoolProperty(
         name='Show Labels',
-        description='Show the labels (pose names) underneath the thumbnails.',
+        description='Show the labels (pose names) underneath the thumbnails',
         default=True,
     )
     show_all_poses = bpy.props.BoolProperty(
         name='Show All Poses',
-        description='Also show poses that don\'t have a thumbnail.',
+        description='Also show poses that don\'t have a thumbnail',
         default=False,
     )
     flipped = bpy.props.BoolProperty(

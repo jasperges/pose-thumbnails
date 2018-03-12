@@ -207,24 +207,24 @@ class POSELIB_OT_add_thumbnails_from_dir(bpy.types.Operator, ImportHelper):
     )
     overwrite_existing = bpy.props.BoolProperty(
         name='Overwrite existing',
-        description='Overwrite existing thumbnails of the poses.',
+        description='Overwrite existing thumbnails of the poses',
         default=True,
     )
     match_fuzzyness = bpy.props.FloatProperty(
         name='Fuzzyness',
-        description='Fuzzyness of the matching (0 = exact match, 1 = everything).',
+        description='Fuzzyness of the matching (0 = exact match, 1 = everything)',
         min=0.0,
         max=1.0,
         default=0.4,
     )
     match_by_number = bpy.props.BoolProperty(
         name='Match by number',
-        description='If the filenames start with a number, match the number to the pose index/frame.',
+        description='If the filenames start with a number, match the number to the pose index/frame',
         default=False,
     )
     start_number = bpy.props.IntProperty(
         name='Start number',
-        description='The image number to map to the first pose.',
+        description='The image number to map to the first pose',
         default=1,
     )
     use_relative_path = bpy.props.BoolProperty(
