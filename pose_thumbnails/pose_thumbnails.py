@@ -142,8 +142,8 @@ def get_current_pose(*, flipped=False) -> dict:
     bones_in_lib = bones_in_poselib(arm_ob, flipped=flipped)
 
     if bpy.context.selected_pose_bones:
-        pose_bones = [pb for pb in bpy.context.selected_pose_bones
-                      if pb in bones_in_lib]
+        pose_bones = {pb for pb in bpy.context.selected_pose_bones
+                      if pb in bones_in_lib}
     else:
         pose_bones = bones_in_lib
     pose = {}
@@ -199,7 +199,7 @@ def bones_in_poselib(armature_ob: bpy.types.Object, flipped=False) \
             bone_names.add(all_pose_bones[bone_idx].name)
 
     if flipped:
-        bone_names = [flip.name(name) for name in bone_names]
+        bone_names = {flip.name(name) for name in bone_names}
 
     # From the set of bone names, get the actual pose bones.
     # Ignore non-existing bones.
