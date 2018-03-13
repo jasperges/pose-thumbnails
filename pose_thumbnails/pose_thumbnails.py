@@ -33,7 +33,7 @@ def get_pose_index_from_frame(poselib, frame):
 
 def get_no_thumbnail_image(pcoll):
     """Return the 'no thumbnail' preview icon."""
-    no_thumbnail_path = get_no_thumbnail_path()
+    no_thumbnail_path = common.get_no_thumbnail_path()
     no_thumbnail = pcoll.get('No Thumbnail') or pcoll.load(
         'No Thumbnail',
         no_thumbnail_path,
