@@ -17,6 +17,9 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Contribution: Sybren A. Stüvel <sybren@blender.studio>
+
+
 import io
 import re
 import sys
