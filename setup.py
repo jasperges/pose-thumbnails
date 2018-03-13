@@ -30,7 +30,8 @@ from setuptools import find_packages, setup
 sys.dont_write_bytecode = True
 
 with io.open('pose_thumbnails/__init__.py', 'rt', encoding='utf8') as f:
-    version = re.search(r'__version__ = \'(.*?)\'', f.read()).group(1)
+    firstbit = f.read(2048)
+    version = re.search(r'__version__ = \'(.*?)\'', firstbit).group(1)
 
 
 class BlenderAddonBdist(bdist):
