@@ -34,7 +34,7 @@ def get_no_thumbnail_path() -> str:
 
 def clear_cached_pose_thumbnails(*, full_clear=False):
     """Clear the cache of get_enum_items()."""
-    from .pose_thumbnails import get_enum_items, preview_collections
+    from .core import get_enum_items, preview_collections
 
     if full_clear:
         pcoll = preview_collections['pose_library']
