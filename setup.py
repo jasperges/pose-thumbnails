@@ -31,7 +31,7 @@ sys.dont_write_bytecode = True
 
 with io.open('pose_thumbnails/__init__.py', 'rt', encoding='utf8') as f:
     firstbit = f.read(2048)
-    version = re.search(r'__version__ = \'(.*?)\'', firstbit).group(1)
+    version = re.search(r"__version__ = '(.*?)'", firstbit).group(1)
 
 
 class BlenderAddonBdist(bdist):
