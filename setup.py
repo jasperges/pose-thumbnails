@@ -17,8 +17,8 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-# Contribution: Sybren A. Stüvel <sybren@blender.studio>
-
+# Contribution: Sybren A. Stüvel <sybren@blender.studio>, Blender Cloud and
+# Landscape Tools add-ons.
 
 import io
 import re
