@@ -719,8 +719,17 @@ class POSELIB_OT_help_regexp(bpy.types.Operator):
         return {'FINISHED'}
 
 
+classes = [cls for cls in locals().values()
+           if isinstance(cls, type) and
+            issubclass(cls, (bpy.types.Operator, bpy.types.Panel, bpy.types.PropertyGroup))]
+
+
 def register():
     """Register all pose thumbnail related things."""
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    bpy.utils.register_class(prefs.PoseThumbnailsPreferences)
+
     bpy.types.WindowManager.pose_mix_factor = bpy.props.FloatProperty(
         name='Mix Factor',
         default=100,
@@ -757,3 +766,9 @@ def unregister():
     del bpy.types.Action.pose_thumbnails
     del bpy.types.WindowManager.pose_thumbnails
     del bpy.types.WindowManager.pose_mix_factor
+    for cls in classes:
+        try:
+            bpy.utils.unregister_class(cls)
+        except Exception as ex:
+            logger.exception('Unable to unregister %s', cls)
+    bpy.utils.unregister_class(prefs.PoseThumbnailsPreferences)
