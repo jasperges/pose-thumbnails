@@ -17,6 +17,9 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Contribution: Sybren A. Stüvel <sybren@blender.studio>, Blender Cloud and
+# Landscape Tools add-ons.
+
 import io
 import re
 import sys
@@ -30,7 +33,8 @@ from setuptools import find_packages, setup
 sys.dont_write_bytecode = True
 
 with io.open('pose_thumbnails/__init__.py', 'rt', encoding='utf8') as f:
-    version = re.search(r'__version__ = \'(.*?)\'', f.read()).group(1)
+    firstbit = f.read(2048)
+    version = re.search(r"__version__ = '(.*?)'", firstbit).group(1)
 
 
 class BlenderAddonBdist(bdist):
@@ -88,5 +92,5 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    zip_safe=True,
+    zip_safe=False,
 )

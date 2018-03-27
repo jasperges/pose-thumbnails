@@ -78,7 +78,7 @@ class PoseThumbnailsPreferences(bpy.types.AddonPreferences):
             col.label('Error in regular expression: %s at position %s' % (ex.msg, ex.pos),
                       icon='ERROR')
         else:
-            from . import pose_thumbnails
+            from . import core
             char = self.optional_name_prefix + 'Alpha_monster-blenrig.001'
-            pl = pose_thumbnails.pose_library_name_prefix(char, context)
+            pl = core.pose_library_name_prefix(char, context)
             col.label('Object %r will use Pose Libraries %r' % (char, pl + '…'))
