@@ -434,3 +434,23 @@ class POSELIB_OT_refresh_thumbnails(bpy.types.Operator):
         self.remove_double_thumbnails()
         common.clear_cached_pose_thumbnails(full_clear=True)
         return {'FINISHED'}
+
+
+classes = [cls for cls in locals().values()
+           if isinstance(cls, type) and
+           issubclass(cls, (bpy.types.Operator, bpy.types.Panel, bpy.types.PropertyGroup))]
+
+
+def register():
+    """Register all pose thumbnail creation related things."""
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+
+def unregister():
+    """Unregister all pose thumbnails creation related things."""
+    for cls in classes:
+        try:
+            bpy.utils.unregister_class(cls)
+        except Exception as ex:
+            logger.exception('Unable to unregister %s', cls)

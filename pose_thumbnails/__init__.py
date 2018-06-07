@@ -37,19 +37,22 @@ if 'bpy' in locals():
 
     if 'core' in locals():
         importlib.reload(core)
+        importlib.reload(creation)
 else:
-    from . import core
+    from . import core, creation
 import bpy
 
 
 def register():
     """Register all pose thumbnail related things."""
     core.register()
+    creation.register()
 
 
 def unregister():
     """Unregister all pose thumbnails related things."""
     core.unregister()
+    creation.unregister()
 
 
 if __name__ == '__main__':
