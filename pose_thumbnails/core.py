@@ -525,7 +525,9 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
         :param context:
         """
         POSELIB_OT_mix_pose.is_running = None
-        context.area.tag_redraw()
+
+        if context is not None:
+            context.area.tag_redraw()
 
     def apply_and_finish(self):
         """Apply the currently mixed pose and finish running the operator."""
@@ -546,6 +548,11 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
         return {'FINISHED'}
 
     def modal(self, context, event):
+        if self._target_state == 'ABORTED':
+            # Assumes the code setting this state already performed cleanup.
+            logger.debug('Aborting modal application')
+            return {'FINISHED'}
+
         if ((event.type == 'LEFTMOUSE' and event.value == 'CLICK')
                 or event.type == 'RET' or self._target_state == 'FINISHED'):
             logger.debug('Finishing modal application')
