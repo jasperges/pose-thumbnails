@@ -403,13 +403,14 @@ def pose_thumbnails_draw(self, context):
 
     layout = self.layout
     col = layout.column(align=True)
-
-    col.prop(
+    row = col.row(align=True)
+    row.prop(
         context.object,
         'pose_lib_for_char',
         text='Libraries for {char}'.format(
             char=character_name(context.object.name, context)),
     )
+    row.operator('poselib.library_name_sanitize', text='', icon='HELP')
     col.separator()
     poselib = context.object.pose_library
     if poselib and poselib.pose_markers:
@@ -617,6 +618,41 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
             bpy.context.scene.tool_settings.use_keyframe_insert_auto = auto_insert
 
 
+class POSELIB_OT_sanitize_library_name(bpy.types.Operator):
+    """Make the active pose library name suitable for a character"""
+    bl_idname = 'poselib.library_name_sanitize'
+    bl_label = 'Sanitize library name'
+    bl_options = {'PRESET', 'UNDO'}
+
+    @classmethod
+    def poll(self, context):
+        return (context is not None and
+                context.object and
+                context.object.type == 'ARMATURE' and
+                context.object.pose_library)
+
+    def execute(self, context):
+        addon_prefs = prefs.for_addon(context)
+        if not context.object or not context.object.pose_library:
+            return {'FINISHED'}
+
+        obj = context.object
+        pose_lib = context.object.pose_library
+        libraries = [lib[0] for lib in pose_lib_for_char_items(self, context)]
+
+        if pose_lib.name in libraries:
+            return {'FINISHED'}
+        else:
+            pattern = r'(?i)(' + obj.name + r'){0,1}[._ -]'
+            existing_name = re.sub(pattern, '', pose_lib.name)
+            new_name = "{prefix}{char}-{library}".format(
+                prefix=addon_prefs.pose_lib_name_prefix,
+                char=obj.name,
+                library=existing_name)
+            pose_lib.name = new_name
+            return {'FINISHED'}
+
+
 class PoselibThumbnail(bpy.types.PropertyGroup):
     """A property to hold the thumbnail info for a pose"""
     frame = bpy.props.IntProperty(
@@ -702,6 +738,7 @@ class POSELIB_PT_pose_previews(bpy.types.Panel):
         poselib = obj.pose_library
         layout = self.layout
         col = layout.column(align=True)
+
         col.prop(
             obj,
             'pose_lib_for_char',
@@ -750,7 +787,7 @@ def register():
     bpy.types.Object.pose_lib_for_char = bpy.props.EnumProperty(
         items=pose_lib_for_char_items,
         name='Pose Libraries',
-        description='Only lists Pose Libraries for the current character, i.e. PLB_{charname}*',
+        description='Only lists Pose Libraries for the current character, i.e. PLB-{charname}*, based on selected armature object name',
         get=pose_lib_for_char_get,
         set=pose_lib_for_char_set,
     )
