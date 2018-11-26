@@ -36,7 +36,10 @@ def pyside_cache(propname):
 
 
 def lru_cache_1arg(wrapped):
-    """Decorator, caches return value as long as the 1st arg doesn't change."""
+    """Decorator, caches return value as long as the 1st arg doesn't change.
+
+    The 1st arg MUST be a DNA datablock (e.g. have an as_pointer() function).
+    """
 
     cached_value = ...
     cached_arg = ...
@@ -50,7 +53,7 @@ def lru_cache_1arg(wrapped):
     def wrapper(*args, **kwargs):
         nonlocal cached_value, cached_arg
 
-        if cached_value is not ... and len(args) and args[0] == cached_arg:
+        if cached_value is not ... and len(args) and args[0].as_pointer() == cached_arg:
             return cached_value
 
         try:
@@ -61,7 +64,7 @@ def lru_cache_1arg(wrapped):
 
         if len(args):
             cached_value = result
-            cached_arg = args[0]
+            cached_arg = args[0].as_pointer()
         else:
             cache_clear()
 

@@ -365,8 +365,8 @@ def pose_library_name_prefix(ob_name: str, context) -> str:
 pose_libs_for_current_char = []
 
 
-def pose_lib_for_char_items(self, context) -> list:
-    """Dynamic list of items for Object.pose_libs_for_char."""
+def generate_pose_lib_for_char_items(self, context) -> list:
+    """Generate list of items for Object.pose_libs_for_char."""
 
     if not context or not context.object:
         return []
@@ -376,6 +376,12 @@ def pose_lib_for_char_items(self, context) -> list:
         a for a in bpy.data.actions
         if a.pose_markers and a.name.lower().startswith(prefix)
     ]
+    return pose_lib_for_char_items(self, context)
+
+
+def pose_lib_for_char_items(self, context) -> list:
+    """Return list of items for Object.pose_libs_for_char."""
+
     return [
         (a.name, a.name, 'Pose library', '', idx)
         for idx, a in enumerate(pose_libs_for_current_char)
@@ -403,13 +409,14 @@ def pose_thumbnails_draw(self, context):
 
     layout = self.layout
     col = layout.column(align=True)
-
-    col.prop(
+    row = col.row(align=True)
+    row.prop(
         context.object,
         'pose_lib_for_char',
         text='Libraries for {char}'.format(
             char=character_name(context.object.name, context)),
     )
+    row.operator('poselib.rename_for_character', text='', icon='HELP')
     col.separator()
     poselib = context.object.pose_library
     if poselib and poselib.pose_markers:
@@ -610,6 +617,49 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
             bpy.context.scene.tool_settings.use_keyframe_insert_auto = auto_insert
 
 
+class POSELIB_OT_rename_for_character(bpy.types.Operator):
+    """Rename the active pose library based on armature object name."""
+    bl_idname = 'poselib.rename_for_character'
+    bl_label = 'Rename for character'
+    bl_options = {'PRESET', 'UNDO'}
+
+    @classmethod
+    def poll(self, context):
+        return (context is not None and
+                context.object and
+                context.object.type == 'ARMATURE' and
+                context.object.pose_library)
+
+    def execute(self, context):
+        if not context.object or not context.object.pose_library:
+            return {'CANCELLED'}
+
+        addon_prefs = prefs.for_addon(context)
+        pose_lib = context.object.pose_library
+        libraries = [lib[0] for lib in pose_lib_for_char_items(self, context)]
+
+        if pose_lib.name in libraries:
+            return {'CANCELLED'}
+
+        obj = context.object
+        char = character_name(obj.name, context)
+        prefix = addon_prefs.pose_lib_name_prefix
+        temp_name = pose_lib.name
+
+        # avoid duplicating the prefix and character name
+        if temp_name.lower().startswith(prefix.lower()):
+           temp_name = temp_name[len(prefix):]
+        if temp_name.lower().startswith(char.lower()):
+           temp_name = temp_name[len(char):]
+
+        new_name = "{prefix}{char}{library}".format(
+            prefix=prefix,
+            char=char,
+            library=temp_name)
+        pose_lib.name = new_name
+        return {'FINISHED'}
+
+
 class PoselibThumbnail(bpy.types.PropertyGroup):
     """A property to hold the thumbnail info for a pose"""
     frame = bpy.props.IntProperty(
@@ -695,6 +745,7 @@ class POSELIB_PT_pose_previews(bpy.types.Panel):
         poselib = obj.pose_library
         layout = self.layout
         col = layout.column(align=True)
+
         col.prop(
             obj,
             'pose_lib_for_char',
@@ -741,9 +792,9 @@ def register():
         update=apply_mix_factor,
     )
     bpy.types.Object.pose_lib_for_char = bpy.props.EnumProperty(
-        items=pose_lib_for_char_items,
+        items=generate_pose_lib_for_char_items,
         name='Pose Libraries',
-        description='Only lists Pose Libraries for the current character, i.e. PLB_{charname}*',
+        description='Only lists Pose Libraries for the current character, i.e. PLB-{charname}*, based on selected armature object name',
         get=pose_lib_for_char_get,
         set=pose_lib_for_char_set,
     )
