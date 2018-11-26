@@ -13,6 +13,8 @@ Now just click on the thumbnails to apply a pose.
 
 **_TIP:_** If you used the old version of this add-on, you can simply add the thumbnails you created for that by clicking 'Batch Add/Change' and then choose 'Index' as mapping method.
 
+See the [wiki](https://github.com/jasperges/pose-thumbnails/wiki) for more documentation.
+
 #### Notes
 
 When making thumbnails for your poses, consider the following:
