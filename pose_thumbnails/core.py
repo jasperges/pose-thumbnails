@@ -712,7 +712,7 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
         name='Show All Poses',
         description='Also show poses that don\'t have a thumbnail',
         default=False,
-        update=show_all_poses_updated
+        update=show_all_poses_updated,
     )
     flipped = bpy.props.BoolProperty(
         name='Apply Flipped',
