@@ -21,7 +21,8 @@ __version__ = '1.0.1'
 
 bl_info = {
     'name': 'Pose Library Thumbnails',
-    'author': 'Jasper van Nieuwenhuizen (jasperge) & Sybren A. Stüvel (dr_sybren) & Patrick W. Crawford (TheDuckCow)',
+    'author': ('Jasper van Nieuwenhuizen (jasperge), Sybren A. Stüvel (dr_sybren)'
+               ' & Patrick W. Crawford (TheDuckCow)'),
     'version': (1, 0, 1),
     'blender': (2, 7, 8),
     'location': 'Properties > Armature > Pose Library',
