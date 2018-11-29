@@ -27,7 +27,7 @@ bl_info = {
     'blender': (2, 7, 8),
     'location': 'Properties > Armature > Pose Library',
     'description': 'Add thumbnails for the poses of a pose Library',
-    'wiki_url': 'https://github.com/jasperges/pose-thumbnails/blob/master/README.md',
+    'wiki_url': 'https://github.com/jasperges/pose-thumbnails/wiki',
     'tracker_url': 'https://github.com/jasperges/pose-thumbnails/issues',
     'support': 'COMMUNITY',
     'category': 'Animation',
