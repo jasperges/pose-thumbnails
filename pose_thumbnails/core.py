@@ -787,17 +787,22 @@ class POSELIB_OT_help_regexp(bpy.types.Operator):
         return {'FINISHED'}
 
 
-classes = [cls for cls in locals().values()
-           if isinstance(cls, type) and
-            issubclass(cls, (bpy.types.Operator, bpy.types.Panel))]
+classes = [
+    PoselibThumbnail,
+    PoselibThumbnailsOptions,
+    PoselibUiSettings,
+    POSELIB_PT_pose_previews,
+    POSELIB_OT_mix_pose,
+    POSELIB_OT_apply_mix_pose,
+    POSELIB_OT_cancel_mix_pose,
+    POSELIB_OT_help_regexp,
+    POSELIB_OT_rename_for_character,
+]
 
 
 def register():
     """Register all pose thumbnail related things."""
 
-    bpy.utils.register_class(PoselibThumbnail)
-    bpy.utils.register_class(PoselibThumbnailsOptions)
-    bpy.utils.register_class(PoselibUiSettings)
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.utils.register_class(prefs.PoseThumbnailsPreferences)
@@ -838,7 +843,8 @@ def unregister():
     del bpy.types.Action.pose_thumbnails
     del bpy.types.WindowManager.pose_thumbnails
     del bpy.types.WindowManager.pose_mix_factor
-    for cls in classes:
+    del bpy.types.Object.pose_lib_for_char
+    for cls in reversed(classes):
         try:
             bpy.utils.unregister_class(cls)
         except Exception as ex:
