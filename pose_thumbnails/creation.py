@@ -436,9 +436,13 @@ class POSELIB_OT_refresh_thumbnails(bpy.types.Operator):
         return {'FINISHED'}
 
 
-classes = [cls for cls in locals().values()
-           if isinstance(cls, type) and
-           issubclass(cls, (bpy.types.Operator, bpy.types.Panel, bpy.types.PropertyGroup))]
+classes = [
+    POSELIB_OT_refresh_thumbnails,
+    POSELIB_OT_remove_all_thumbnails,
+    POSELIB_OT_remove_pose_thumbnail,
+    POSELIB_OT_add_thumbnails_from_dir,
+    POSELIB_OT_add_thumbnail,
+]
 
 
 def register():
@@ -449,7 +453,7 @@ def register():
 
 def unregister():
     """Unregister all pose thumbnails creation related things."""
-    for cls in classes:
+    for cls in reversed(classes):
         try:
             bpy.utils.unregister_class(cls)
         except Exception as ex:

@@ -407,18 +407,24 @@ def pose_thumbnails_draw(self, context):
     if not context.object:
         return
 
+    addon_prefs = prefs.for_addon(context)
+    obj = context.object
+    poselib = obj.pose_library
     layout = self.layout
     col = layout.column(align=True)
     row = col.row(align=True)
+    if obj.name.startswith(addon_prefs.optional_name_prefix):
+        char = obj.name[len(addon_prefs.optional_name_prefix):]
+    else:
+        char = obj.name
     row.prop(
-        context.object,
+        obj,
         'pose_lib_for_char',
         text='Libraries for {char}'.format(
-            char=character_name(context.object.name, context)),
+            char=character_name(char, context)),
     )
     row.operator('poselib.rename_for_character', text='', icon='HELP')
     col.separator()
-    poselib = context.object.pose_library
     if poselib and poselib.pose_markers:
         pose_thumbnail_options = context.window_manager.pose_thumbnails.options
         draw_thumbnails(context, col, pose_thumbnail_options)
@@ -618,7 +624,7 @@ class POSELIB_OT_mix_pose(bpy.types.Operator):
 
 
 class POSELIB_OT_rename_for_character(bpy.types.Operator):
-    """Rename the active pose library based on armature object name."""
+    """Rename the active pose library based on armature object name"""
     bl_idname = 'poselib.rename_for_character'
     bl_label = 'Rename for character'
     bl_options = {'PRESET', 'UNDO'}
@@ -642,7 +648,10 @@ class POSELIB_OT_rename_for_character(bpy.types.Operator):
             return {'CANCELLED'}
 
         obj = context.object
-        char = character_name(obj.name, context)
+        char = obj.name
+        if char.startswith(addon_prefs.optional_name_prefix):
+            char = char[len(addon_prefs.optional_name_prefix):]
+        char = character_name(char, context)
         prefix = addon_prefs.pose_lib_name_prefix
         temp_name = pose_lib.name
 
@@ -675,6 +684,11 @@ class PoselibThumbnail(bpy.types.PropertyGroup):
     )
 
 
+def show_all_poses_updated(self, context):
+    """Refresh thumbnails when changing the show all poses toggle"""
+    bpy.ops.poselib.refresh_thumbnails()
+
+
 def on_flipped_updated(self, context):
     common.clear_cached_pose_thumbnails()
 
@@ -698,6 +712,7 @@ class PoselibThumbnailsOptions(bpy.types.PropertyGroup):
         name='Show All Poses',
         description='Also show poses that don\'t have a thumbnail',
         default=False,
+        update=show_all_poses_updated,
     )
     flipped = bpy.props.BoolProperty(
         name='Apply Flipped',
@@ -740,21 +755,23 @@ class POSELIB_PT_pose_previews(bpy.types.Panel):
 
     def draw(self, context):
         addon_prefs = prefs.for_addon(context)
-        wm = context.window_manager
         obj = context.object
         poselib = obj.pose_library
         layout = self.layout
         col = layout.column(align=True)
-
+        if obj.name.startswith(addon_prefs.optional_name_prefix):
+            char = obj.name[len(addon_prefs.optional_name_prefix):]
+        else:
+            char = obj.name
         col.prop(
             obj,
             'pose_lib_for_char',
             text='Libraries for {char}'.format(
-                char=character_name(obj.name, context)),
+                char=character_name(char, context)),
         )
         col.separator()
         if poselib and poselib.pose_markers:
-            pose_thumbnail_options = wm.pose_thumbnails.options
+            pose_thumbnail_options = context.window_manager.pose_thumbnails.options
             draw_thumbnails(context, col, pose_thumbnail_options)
         col.template_ID(obj, "pose_library", unlink="poselib.unlink")
 
@@ -770,13 +787,22 @@ class POSELIB_OT_help_regexp(bpy.types.Operator):
         return {'FINISHED'}
 
 
-classes = [cls for cls in locals().values()
-           if isinstance(cls, type) and
-            issubclass(cls, (bpy.types.Operator, bpy.types.Panel, bpy.types.PropertyGroup))]
+classes = [
+    PoselibThumbnail,
+    PoselibThumbnailsOptions,
+    PoselibUiSettings,
+    POSELIB_PT_pose_previews,
+    POSELIB_OT_mix_pose,
+    POSELIB_OT_apply_mix_pose,
+    POSELIB_OT_cancel_mix_pose,
+    POSELIB_OT_help_regexp,
+    POSELIB_OT_rename_for_character,
+]
 
 
 def register():
     """Register all pose thumbnail related things."""
+
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.utils.register_class(prefs.PoseThumbnailsPreferences)
@@ -817,7 +843,8 @@ def unregister():
     del bpy.types.Action.pose_thumbnails
     del bpy.types.WindowManager.pose_thumbnails
     del bpy.types.WindowManager.pose_mix_factor
-    for cls in classes:
+    del bpy.types.Object.pose_lib_for_char
+    for cls in reversed(classes):
         try:
             bpy.utils.unregister_class(cls)
         except Exception as ex:
