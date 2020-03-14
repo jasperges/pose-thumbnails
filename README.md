@@ -1,3 +1,7 @@
+**IMPORTANT: This add-on is not maintained anymore. For a Blender 2.8 compatible version you can try [this version](https://gitlab.com/blender-institute/pose-thumbnails).**
+
+---
+
 # Pose Thumbnails
 
 Pose Thumbnails is a simple add-on which adds the ability to have thumbnails for the poses in a Pose Library.
